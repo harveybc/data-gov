@@ -48,11 +48,21 @@ If `var/credentials.json` already exists, `issue_credentials.py` will not overwr
 
 ## Run
 
-The process must **stay running**:
+**Three processes**, all left running (lakes first):
 
 ```bash
+# 1) file lake
+cd ../financial-data/lake && pip install -e . && sh scripts/serve.sh
+# http://127.0.0.1:5056  inventory of parquet/csv (stat only)
+
+# 2) OLAP cube (read-only, PG*)
+cd ../predictor/olap/lake && pip install -e . && sh scripts/serve.sh
+# http://127.0.0.1:5057  tables in predictor_olap
+
+# 3) AAA
+cd data-gov
 PYTHONPATH=. python3 -m app.main --load_config examples/config/default.json
-# same: sh scripts/serve.sh
+# same: sh scripts/serve.sh  → http://127.0.0.1:5055/login
 ```
 
 Then open **http://127.0.0.1:5055/login** (not `/var/credentials.json` — that path is a **disk file**, not a web page).
@@ -126,8 +136,8 @@ Shipped examples:
 
 | `lake_id` | Plugin | What |
 |---|---|---|
-| `financial_files` | `files_lake` | Sibling `../financial-data`, glob on one BTC funding parquet |
-| `olap_lab` | `sql_lake` | `examples/data/olap_lab/olap.sqlite` (not the campaign Postgres) |
+| `financial_files` | `http_lake` → :5056 | `financial-data/lake` — parquet/csv under data roots + features |
+| `olap_cube` | `http_lake` → :5057 | `predictor/olap/lake` — live `predictor_olap`, SELECT only |
 
 ## Plugins (setuptools, same as predictor)
 
@@ -175,4 +185,4 @@ var/                   gitignored: credentials.json, accounting.db
 
 - Not `data-logger` (ESP32 / ThingsBoard telemetry). That may become a lake plugin later.
 - Not a human approval queue. Musashi/Satoshi are not on the read hot path.
-- Not the populated campaign OLAP. `olap_lab` is a throwaway sqlite.
+- Not a write API to the campaign cube. `olap/lake` is SELECT only and does not run `reset_olap`.

@@ -32,6 +32,7 @@ setup(
             "default_lake=lake_plugins.default_lake:Plugin",
             "files_lake=lake_plugins.files_lake:Plugin",
             "sql_lake=lake_plugins.sql_lake:Plugin",
+            "http_lake=lake_plugins.http_lake:Plugin",
         ],
         "datagov.role": [
             "default_role=role_plugins.default_role:Plugin",

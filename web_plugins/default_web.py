@@ -296,6 +296,17 @@ class Plugin:
                 return json_error(404, "unknown lake")
             try:
                 payload = lake.read(resource, start=start, end=end)
+            except PermissionError as exc:
+                plugins()["accounting"].record(
+                    actor=principal["username"],
+                    lake_id=lake_id,
+                    verb="read",
+                    resource_id=resource,
+                    decision="deny",
+                    warning=str(exc) or "holdout",
+                    experiment_key=experiment,
+                )
+                return json_error(403, str(exc) or "holdout")
             except FileNotFoundError:
                 plugins()["accounting"].record(
                     actor=principal["username"],
@@ -307,6 +318,17 @@ class Plugin:
                     experiment_key=experiment,
                 )
                 return json_error(404, "unknown resource")
+            except RuntimeError as exc:
+                plugins()["accounting"].record(
+                    actor=principal["username"],
+                    lake_id=lake_id,
+                    verb="read",
+                    resource_id=resource,
+                    decision="deny",
+                    warning=str(exc),
+                    experiment_key=experiment,
+                )
+                return json_error(503, str(exc))
             plugins()["accounting"].record(
                 actor=principal["username"],
                 lake_id=lake_id,
@@ -362,6 +384,16 @@ class Plugin:
                     experiment_key=experiment,
                 )
                 return json_error(403, "holdout")
+            except RuntimeError as exc:
+                plugins()["accounting"].record(
+                    actor=principal["username"],
+                    lake_id=lake_id,
+                    verb="query",
+                    decision="deny",
+                    warning=str(exc),
+                    experiment_key=experiment,
+                )
+                return json_error(503, str(exc))
             plugins()["accounting"].record(
                 actor=principal["username"],
                 lake_id=lake_id,

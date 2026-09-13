@@ -27,15 +27,15 @@ How a lake must be built: `docs/03_LAKE_ADAPTER.md`.
 ## Agent quickstart
 
 ```bash
+# lakes first
+cd financial-data/lake && pip install -e . && sh scripts/serve.sh   # :5056
+cd predictor/olap/lake && pip install -e . && sh scripts/serve.sh # :5057
 cd data-gov
 python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-pip install -e .
+pip install -r requirements.txt && pip install -e .
 test -f var/credentials.json || python3 scripts/issue_credentials.py
-python3 scripts/seed_olap.py
 python3 -m pytest tests -q
-# leave this running:
-PYTHONPATH=. python3 -m app.main --load_config examples/config/default.json
+PYTHONPATH=. python3 -m app.main --load_config examples/config/default.json  # :5055
 ```
 
 Tell the user:
@@ -56,4 +56,5 @@ or credentials into committed files.
 - Poll Hermes on a timer with no event.
 - Treat the demo SQLite log as production evidence.
 - Serve `var/credentials.json` over HTTP.
-- Claim remote lake HTTP adapters (G7) are implemented.
+- Serve `var/credentials.json` over HTTP.
+- Run `tests/test_df_lab_evaluation.py` or other heavy predictor labs on this host.

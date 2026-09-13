@@ -7,9 +7,12 @@ data-gov talks to the lake through a **plugin** in group `datagov.lake`.
 A new lake is not a new governance product. It is an adapter + a JSON
 block + policies.
 
-Remote HTTP lakes (the lake is another process) are planned (G7). They
-are **not** implemented yet. Today you add a plugin in this repo or reuse
-`files_lake` / `sql_lake` with config.
+Remote HTTP lakes use plugin `http_lake` (`base_url`). Shipped:
+
+- `financial-data/lake` → http://127.0.0.1:5056
+- `predictor/olap/lake` → http://127.0.0.1:5057
+
+`files_lake` / `sql_lake` remain for tests and local directories.
 
 ## 1. Register it
 
@@ -106,8 +109,9 @@ and a deny row. Holdout range → 403.
 
 | Plugin | Use when |
 |---|---|
-| `files_lake` | Directory of csv/parquet with optional globs (this is how `financial-data` is attached today) |
-| `sql_lake` | SQLite SELECT-only cube (lab OLAP; not the live campaign Postgres) |
+| `http_lake` | Another process exposing `/api/v1/discover|coverage|read|query` |
+| `files_lake` | Local directory of csv/parquet (tests / small trees) |
+| `sql_lake` | Local SQLite SELECT-only |
 | `default_lake` | Alias of `files_lake` |
 
 A future `data-logger` telemetry store would be another `datagov.lake`
