@@ -22,22 +22,33 @@ def main():
     secrets_path = var / "credentials.json"
     if secrets_path.exists():
         print(f"already exists: {secrets_path}")
-        return 0
-    payload = {
-        "password_salt": SALT,
-        "people": {
-            "harvey": secrets.token_urlsafe(12),
-            "musashi": secrets.token_urlsafe(12),
-        },
-        "services": {
-            "predictor": secrets.token_urlsafe(24),
-            "doin": secrets.token_urlsafe(24),
-            "heuristic-strategy": secrets.token_urlsafe(24),
-        },
-    }
-    secrets_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
-    secrets_path.chmod(0o600)
-    print(f"wrote {secrets_path}")
+    else:
+        payload = {
+            "password_salt": SALT,
+            "people": {
+                "harvey": secrets.token_urlsafe(12),
+                "musashi": secrets.token_urlsafe(12),
+            },
+            "services": {
+                "predictor": secrets.token_urlsafe(24),
+                "doin": secrets.token_urlsafe(24),
+                "heuristic-strategy": secrets.token_urlsafe(24),
+            },
+        }
+        secrets_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+        secrets_path.chmod(0o600)
+        print(f"wrote {secrets_path}")
+    from app.lake_auth import load_token, write_token
+
+    if not load_token():
+        token = secrets.token_urlsafe(32)
+        write_token(token)
+        print("wrote var/lake_token")
+    secret = var / "flask_secret"
+    if not secret.exists():
+        secret.write_text(secrets.token_urlsafe(32) + "\n", encoding="utf-8")
+        secret.chmod(0o600)
+        print("wrote var/flask_secret")
     return 0
 
 

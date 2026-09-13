@@ -7,10 +7,12 @@ import sys
 from pathlib import Path
 from typing import Any
 
+import os
 from app.cli import parse_args
 from app.config import DEFAULT_VALUES
 from app.config_handler import load_config, save_config
 from app.config_merger import merge_config, process_unknown_args
+from app.lake_auth import load_token
 from app.plugin_loader import get_plugin_params, load_plugin
 
 GROUPS = {
@@ -71,6 +73,13 @@ def main(argv=None) -> int:
     db = config.get("accounting_db")
     if db and not Path(str(db)).is_absolute():
         config["accounting_db"] = str((root / db).resolve())
+    token = load_token()
+    if token:
+        config["lake_service_token"] = token
+        os.environ.setdefault("DATA_GOV_LAKE_TOKEN", token)
+    secret_file = root / "var" / "flask_secret"
+    if secret_file.is_file():
+        config["secret_key"] = secret_file.read_text(encoding="utf-8").strip()
 
     plugins = assemble(config)
 

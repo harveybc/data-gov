@@ -127,7 +127,6 @@ class Plugin:
             )
             return render_template(
                 "login.html",
-                credentials_path=str(creds),
                 credentials_exist=creds.is_file(),
             )
 
@@ -277,6 +276,17 @@ class Plugin:
                     warning="missing experiment_key",
                 )
                 return json_error(403, "experiment_key required")
+            if not start or not end:
+                plugins()["accounting"].record(
+                    actor=principal["username"],
+                    lake_id=lake_id,
+                    verb="read",
+                    resource_id=resource,
+                    decision="deny",
+                    warning="from and to are required",
+                    experiment_key=experiment,
+                )
+                return json_error(400, "from and to are required")
             ok, reason = plugins()["access"].authorize(
                 principal, lake_id, "read", start=start, end=end
             )
@@ -373,6 +383,14 @@ class Plugin:
             try:
                 payload = lake.query(sql)
             except ValueError as exc:
+                plugins()["accounting"].record(
+                    actor=principal["username"],
+                    lake_id=lake_id,
+                    verb="query",
+                    decision="deny",
+                    warning=str(exc),
+                    experiment_key=experiment,
+                )
                 return json_error(400, str(exc))
             except PermissionError:
                 plugins()["accounting"].record(

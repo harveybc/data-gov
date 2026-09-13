@@ -25,9 +25,25 @@ class Plugin:
     def set_params(self, **kwargs):
         self.params.update(kwargs)
 
+    def _headers(self):
+        token = self.params.get("lake_service_token")
+        if not token:
+            try:
+                from app.lake_auth import load_token
+
+                token = load_token()
+            except Exception:
+                token = None
+        if not token:
+            return {}
+        return {"Authorization": f"Bearer {token}"}
+
     def _get(self, path: str, params=None):
+        headers = self._headers()
         if self._opener is not None:
-            response = self._opener.get(path, query_string=params or {})
+            response = self._opener.get(
+                path, query_string=params or {}, headers=headers
+            )
             body = response.get_json(silent=True) or {}
             self._raise_http(response.status_code, body)
             return body
@@ -35,7 +51,7 @@ class Plugin:
         if params:
             url += "?" + urlencode({k: v for k, v in params.items() if v is not None})
         try:
-            with urlopen(Request(url), timeout=60) as handle:
+            with urlopen(Request(url, headers=headers), timeout=60) as handle:
                 return json.loads(handle.read().decode())
         except HTTPError as exc:
             try:
@@ -49,10 +65,14 @@ class Plugin:
 
     def _raise_http(self, status, body):
         err = (body or {}).get("error") or f"http {status}"
+        if status == 401:
+            raise RuntimeError("unauthenticated")
         if status == 403:
             raise PermissionError(err)
         if status == 404:
             raise FileNotFoundError(err)
+        if status == 400:
+            raise ValueError(err)
         if status >= 400:
             raise RuntimeError(err)
 
