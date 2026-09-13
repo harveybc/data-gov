@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 import time
+import uuid
 from pathlib import Path
 from urllib.parse import urlencode
 
@@ -196,7 +197,8 @@ class DataGovClient:
         if expected and target.is_file() and _sha256_file(target) == expected:
             info.update(path=str(target), bytes=target.stat().st_size, cached=True)
             return 200, info
-        part = dest / f"{expected}{ext}.part"
+        # one writer, one part file: parallel downloads of the same bytes never share a partial file
+        part = dest / f"{expected}{ext}.{os.getpid()}.{uuid.uuid4().hex}.part"
         digest = hashlib.sha256()
         size = 0
         try:

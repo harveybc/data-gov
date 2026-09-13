@@ -92,9 +92,14 @@ class Plugin:
         return self._cuts_dir().parent / "source_sha256.json"
 
     def _path(self, resource_id: str) -> Path:
-        path = self._root() / resource_id
-        if not path.is_file():
-            raise FileNotFoundError(resource_id)
+        # A resource id is a relative path inside the lake: no absolute ids, no '..', no escape by symlink.
+        rid = str(resource_id or "")
+        if not rid or rid.startswith(("/", "\\")) or "\\" in rid or any(p in ("", ".", "..") for p in rid.split("/")):
+            raise FileNotFoundError(rid)
+        root = self._root().resolve()
+        path = (root / rid).resolve()
+        if not path.is_relative_to(root) or not path.is_file():
+            raise FileNotFoundError(rid)
         return path
 
     # inventory ---------------------------------------------------------
@@ -461,6 +466,9 @@ class Plugin:
         frame = self._frame(resource_id)
         col = self._time_col([str(c) for c in frame.columns], resource_id)
         holdout = self._holdout()
+        if col is None and holdout is not None and resource_id not in (self.params.get("untimed") or []):
+            # same rule as download: without a time column nothing proves the rows end before the holdout
+            raise PermissionError("no time column under holdout")
         if start or end:
             lo = parse_day(start) if start else None
             last_day = parse_day(end) if end else None

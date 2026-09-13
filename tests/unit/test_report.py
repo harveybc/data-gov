@@ -39,8 +39,9 @@ def test_hash_ignores_order_lineage_and_receipt():
         ("R2", 2),
     ]
     assert body["tags"] == {} and body["experiment_set_key"] is None
+    # role belongs to datasets only; the OLAP lake hashes the same metric fields (test_report_cross_repo.py)
     assert set(body["metrics"][0]) == {
-        "metric", "value", "split", "horizon", "std_dev", "min_value", "max_value", "unit", "role"
+        "metric", "value", "split", "horizon", "std_dev", "min_value", "max_value", "unit"
     }
 
 

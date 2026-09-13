@@ -114,7 +114,6 @@ def _normalise_metric(item):
         "min_value": _number(item.get("min_value"), "min_value"),
         "max_value": _number(item.get("max_value"), "max_value"),
         "unit": _text(item.get("unit"), "unit"),
-        "role": _text(item.get("role"), "role"),
     }
 
 

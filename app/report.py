@@ -14,8 +14,8 @@ METRIC_FIELDS = (
     "min_value",
     "max_value",
     "unit",
-    "role",
 )
+# `role` belongs to a dataset (x_train_file, ...), not to a metric; the OLAP lake hashes the same fields
 DATASET_FIELDS = ("lake", "resource", "sha256", "role")
 
 
