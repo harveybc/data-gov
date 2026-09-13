@@ -5,7 +5,13 @@ setup(
     version="0.1.0",
     packages=find_packages(),
     include_package_data=True,
-    package_data={"web_plugins": ["templates/*.html"]},
+    package_data={
+            "web_plugins": [
+                "templates/*.html",
+                "static/css/*.css",
+                "static/js/*.js",
+            ]
+        },
     entry_points={
         "console_scripts": [
             "data-gov=app.main:main",

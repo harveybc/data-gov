@@ -1,147 +1,119 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>data-gov · {{ meta.title }}</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <style>
-    body { font-size: 13px; }
-    code { font-size: 11px; }
-  </style>
-</head>
-<body class="hold-transition layout-navbar-fixed dark-mode">
-<div class="wrapper">
-  <nav class="main-header navbar navbar-expand navbar-dark">
-    <ul class="navbar-nav">
-      <li class="nav-item">
-        <a class="nav-link" href="{{ url_for('dashboard') }}"><i class="fas fa-arrow-left"></i> lakes</a>
-      </li>
-      <li class="nav-item"><span class="nav-link"><strong>{{ meta.title }}</strong></span></li>
-    </ul>
-    <ul class="navbar-nav ml-auto">
-      <li class="nav-item"><span class="nav-link">{{ user.display_name }}</span></li>
-      <li class="nav-item"><a class="nav-link" href="{{ url_for('logout') }}">Sign out</a></li>
-    </ul>
-  </nav>
-  <div class="content-wrapper" style="margin-left:0">
-    <section class="content pt-3">
-      <div class="container-fluid">
-        <div class="row">
-          <div class="col-md-4">
-            <div class="card">
-              <div class="card-header"><h3 class="card-title">Details</h3></div>
-              <div class="card-body">
-                <p>{{ meta.description }}</p>
-                <p class="mb-1"><span class="badge badge-info">{{ meta.kind }}</span> <code>{{ meta.lake_id }}</code></p>
-                <p class="small text-muted">Root <code>{{ meta.root_path }}</code></p>
-                <hr>
-                <p>Host free <strong>{{ fmt_bytes(storage.host_free) }}</strong> of {{ fmt_bytes(storage.host_total) }}</p>
-                <p class="mb-0">Bytes in this lake <strong>{{ fmt_bytes(storage.lake_bytes) }}</strong></p>
-              </div>
-            </div>
-            <div class="card">
-              <div class="card-header"><h3 class="card-title">Inventory</h3></div>
-              <div class="card-body p-0">
-                <table class="table table-sm table-striped mb-0">
-                  <thead><tr><th>Resource</th><th>Bytes</th><th>Hash</th></tr></thead>
-                  <tbody>
-                    {% for r in resources %}
-                    <tr>
-                      <td><code>{{ r.resource_id }}</code></td>
-                      <td>{{ fmt_bytes(r.bytes) }}</td>
-                      <td><code>{{ r.sha256_prefix }}</code></td>
-                    </tr>
-                    {% else %}
-                    <tr><td colspan="3" class="text-muted">Empty inventory.</td></tr>
-                    {% endfor %}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-8">
-            <div class="row">
-              <div class="col-md-6">
-                <div class="card">
-                  <div class="card-header"><h3 class="card-title">Operations</h3></div>
-                  <div class="card-body"><canvas id="verbChart" height="160"></canvas></div>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="card">
-                  <div class="card-header"><h3 class="card-title">Actors</h3></div>
-                  <div class="card-body"><canvas id="actorChart" height="160"></canvas></div>
-                </div>
-              </div>
-            </div>
-            <div class="card">
-              <div class="card-header"><h3 class="card-title">Usage log</h3></div>
-              <div class="card-body p-0 table-responsive">
-                <table class="table table-sm table-hover mb-0">
-                  <thead>
-                    <tr>
-                      <th>When</th><th>Actor</th><th>Op</th><th>Resource</th>
-                      <th>Decision</th><th>Bytes</th><th>Experiment</th><th>Warning</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {% for row in logs %}
-                    <tr>
-                      <td class="small">{{ row.ts }}</td>
-                      <td>{{ row.actor }}</td>
-                      <td><code>{{ row.verb }}</code></td>
-                      <td><code>{{ row.resource_id or '—' }}</code></td>
-                      <td>
-                        {% if row.decision == 'deny' %}
-                          <span class="badge badge-danger">deny</span>
-                        {% else %}
-                          <span class="badge badge-success">{{ row.decision or '—' }}</span>
-                        {% endif %}
-                      </td>
-                      <td>{{ fmt_bytes(row.bytes) }}</td>
-                      <td class="small">{{ row.experiment_key or '' }}</td>
-                      <td class="text-warning small">{{ row.warning or '' }}</td>
-                    </tr>
-                    {% else %}
-                    <tr><td colspan="8" class="text-muted">No events yet.</td></tr>
-                    {% endfor %}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
+{% extends "base.html" %}
+{% block title %}data-gov · {{ meta.title }}{% endblock %}
+{% block head %}
+<script src="{{ url_for('static', filename='js/chart.umd.min.js') }}"></script>
+{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('dashboard') }}">&larr; lakes</a></p>
+<div class="row">
+  <div class="col-md-4">
+    <div class="card card-dark">
+      <div class="card-header"><h3 class="card-title">{{ meta.title }}</h3></div>
+      <div class="card-body">
+        <p>{{ meta.description }}</p>
+        <p class="mb-1"><span class="badge badge-info">{{ meta.kind }}</span> <code>{{ meta.lake_id }}</code></p>
+        <p class="small text-muted">Root <code>{{ meta.root_path }}</code></p>
+        <hr>
+        <p>Host free <strong>{{ fmt_bytes(storage.host_free) }}</strong> of {{ fmt_bytes(storage.host_total) }}</p>
+        <p class="mb-0">Bytes in this lake <strong>{{ fmt_bytes(storage.lake_bytes) }}</strong></p>
+      </div>
+    </div>
+    <div class="card card-dark">
+      <div class="card-header"><h3 class="card-title">Inventory</h3></div>
+      <div class="card-body p-0">
+        <table class="table table-sm table-striped table-dark mb-0">
+          <thead><tr><th>Resource</th><th>Bytes</th><th>Hash</th></tr></thead>
+          <tbody>
+            {% for r in resources %}
+            <tr>
+              <td><code>{{ r.resource_id }}</code></td>
+              <td>{{ fmt_bytes(r.bytes) if r.bytes is defined else '—' }}</td>
+              <td><code>{{ r.sha256_prefix or '' }}</code></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="3" class="text-muted">Empty inventory.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-8">
+    <div class="row">
+      <div class="col-md-6">
+        <div class="card card-dark">
+          <div class="card-header"><h3 class="card-title">Operations</h3></div>
+          <div class="card-body"><canvas id="verbChart" height="160"></canvas></div>
         </div>
       </div>
-    </section>
+      <div class="col-md-6">
+        <div class="card card-dark">
+          <div class="card-header"><h3 class="card-title">Actors</h3></div>
+          <div class="card-body"><canvas id="actorChart" height="160"></canvas></div>
+        </div>
+      </div>
+    </div>
+    <div class="card card-dark">
+      <div class="card-header"><h3 class="card-title">Usage log</h3></div>
+      <div class="card-body p-0 table-responsive">
+        <table class="table table-sm table-hover table-dark mb-0">
+          <thead>
+            <tr>
+              <th>When</th><th>Actor</th><th>Op</th><th>Resource</th>
+              <th>Decision</th><th>Bytes</th><th>Experiment</th><th>Warning</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in logs %}
+            <tr>
+              <td class="small">{{ row.ts }}</td>
+              <td>{{ row.actor }}</td>
+              <td><code>{{ row.verb }}</code></td>
+              <td><code>{{ row.resource_id or '—' }}</code></td>
+              <td>
+                {% if row.decision == 'deny' %}
+                  <span class="badge badge-danger">deny</span>
+                {% else %}
+                  <span class="badge badge-success">{{ row.decision or '—' }}</span>
+                {% endif %}
+              </td>
+              <td>{{ fmt_bytes(row.bytes) }}</td>
+              <td class="small">{{ row.experiment_key or '' }}</td>
+              <td class="text-warning small">{{ row.warning or '' }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="8" class="text-muted">No events yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </div>
+{% endblock %}
+{% block scripts %}
 <script>
   const verbs = {{ by_verb | tojson }};
   const actors = {{ by_actor | tojson }};
-  const dark = { color: '#adb5bd' };
-  if (verbs.length) {
+  if (window.Chart && verbs.length) {
     new Chart(document.getElementById('verbChart'), {
       type: 'bar',
       data: {
         labels: verbs.map(v => v.verb),
         datasets: [{ label: 'ops', data: verbs.map(v => v.n), backgroundColor: '#17a2b8' }]
       },
-      options: { plugins: { legend: { display: false } }, scales: { x: { ticks: dark }, y: { ticks: dark } } }
+      options: { plugins: { legend: { display: false } } }
     });
   }
-  if (actors.length) {
+  if (window.Chart && actors.length) {
     new Chart(document.getElementById('actorChart'), {
       type: 'doughnut',
       data: {
         labels: actors.map(a => a.actor),
-        datasets: [{ data: actors.map(a => a.n), backgroundColor: ['#007bff', '#28a745', '#ffc107', '#dc3545', '#6f42c1'] }]
-      },
-      options: { plugins: { legend: { labels: dark } } }
+        datasets: [{ data: actors.map(a => a.n),
+          backgroundColor: ['#007bff', '#28a745', '#ffc107', '#dc3545', '#6f42c1'] }]
+      }
     });
   }
 </script>
-</body>
-</html>
+{% endblock %}

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}data-gov{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/adminlte.min.css') }}">
+  <style>
+    body { font-size: 14px; background: #1f2d3d; color: #f8f9fa; }
+    .main-header { background: #1a2226 !important; }
+    .content-wrapper { background: #1f2d3d; margin-left: 0 !important; }
+    .small-box { border-radius: 6px; }
+    .small-box .inner h3 { font-size: 1.7rem; }
+    .lake-card { cursor: pointer; transition: transform .12s ease; min-height: 180px; }
+    .lake-card:hover { transform: translateY(-2px); }
+    .free-bar { height: 8px; background: #343a40; border-radius: 4px; overflow: hidden; }
+    .free-bar > span { display: block; height: 100%; background: #17a2b8; }
+    .warn-item { border-left: 3px solid #ffc107; padding-left: .75rem; margin-bottom: .75rem; }
+    a.text-reset:hover { text-decoration: none; }
+    .login-page { background: #1f2d3d; }
+    .login-logo { color: #fff; }
+  </style>
+  {% block head %}{% endblock %}
+</head>
+<body class="hold-transition layout-top-nav dark-mode">
+<div class="wrapper">
+  <nav class="main-header navbar navbar-expand-md navbar-dark">
+    <div class="container-fluid">
+      <a href="{{ url_for('dashboard') }}" class="navbar-brand">
+        <span class="brand-text"><strong>data-gov</strong></span>
+      </a>
+      <ul class="navbar-nav ml-auto">
+        {% if user %}
+        <li class="nav-item"><span class="nav-link">{{ user.display_name }}</span></li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('logout') }}">Sign out</a></li>
+        {% endif %}
+      </ul>
+    </div>
+  </nav>
+  <div class="content-wrapper">
+    <div class="content pt-3">
+      <div class="container-fluid">
+        {% block content %}{% endblock %}
+      </div>
+    </div>
+  </div>
+</div>
+{% block scripts %}{% endblock %}
+</body>
+</html>

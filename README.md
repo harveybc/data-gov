@@ -53,10 +53,10 @@ Desde el checkout:
 
 ```bash
 PYTHONPATH=. python3 -m app.main --load_config examples/config/default.json
-# o: sh scripts/data-gov.sh
+# o: sh scripts/serve.sh
 ```
 
-Abre **http://127.0.0.1:5055**.
+El proceso tiene que **quedar corriendo**. Luego **http://127.0.0.1:5055** (login). CSS va por `/static/`, no por CDN.
 
 Personas: usuario/clave en `var/credentials.json` (gitignored; se crea con `python3 scripts/issue_credentials.py`).
 Servicios (`predictor`, `doin`, `heuristic-strategy`): API key Bearer + header `X-Experiment-Key` en cada `read`/`query`.

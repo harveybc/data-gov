@@ -4,17 +4,21 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>data-gov · sign in</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/adminlte.min.css') }}">
+  <style>
+    body.login-page { background: #1f2d3d; }
+    .login-logo, .login-logo a { color: #fff; }
+    .login-box { margin-top: 8vh; }
+    .login-card-body { background: #343a40; color: #f8f9fa; }
+  </style>
 </head>
-<body class="hold-transition login-page dark-mode">
+<body class="hold-transition login-page">
 <div class="login-box">
-  <div class="login-logo">
-    <b>data</b>-gov
-  </div>
+  <div class="login-logo"><b>data</b>-gov</div>
   <div class="card">
     <div class="card-body login-card-body">
-      <p class="login-box-msg">Governance of your lakes. Automatic policy. No ticket on a GET.</p>
+      <p class="login-box-msg">Governance of your lakes.</p>
       {% with messages = get_flashed_messages(with_categories=true) %}
         {% for cat, msg in messages %}
           <div class="alert alert-{{ cat }}">{{ msg }}</div>
@@ -23,15 +27,16 @@
       <form method="post">
         <div class="input-group mb-3">
           <input type="text" name="username" class="form-control" placeholder="username" autofocus>
-          <div class="input-group-append"><div class="input-group-text"><i class="fas fa-user"></i></div></div>
         </div>
         <div class="input-group mb-3">
           <input type="password" name="password" class="form-control" placeholder="password">
-          <div class="input-group-append"><div class="input-group-text"><i class="fas fa-lock"></i></div></div>
         </div>
         <button type="submit" class="btn btn-primary btn-block">Sign in</button>
       </form>
-      <p class="mt-3 mb-0 text-muted small">People sign in here. Services use API keys, not this form.</p>
+      <p class="mt-3 mb-0 text-muted small">
+        Local passwords and API keys: <code>var/credentials.json</code>
+        (created by <code>python3 scripts/issue_credentials.py</code>).
+      </p>
     </div>
   </div>
 </div>

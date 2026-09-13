@@ -42,9 +42,12 @@ class Plugin:
 
     def create_app(self, context):
         self._context = context
+        here = Path(__file__).resolve().parent
         app = Flask(
             __name__,
-            template_folder=str(Path(__file__).resolve().parent / "templates"),
+            template_folder=str(here / "templates"),
+            static_folder=str(here / "static"),
+            static_url_path="/static",
         )
         app.secret_key = self.params.get("secret_key") or "change-me-in-config"
         self._register(app)
@@ -55,7 +58,8 @@ class Plugin:
         host = self.params.get("web_host") or "127.0.0.1"
         port = int(self.params.get("web_port") or 5055)
         print(f"data-gov UI → http://{host}:{port}")
-        app.run(host=host, port=port, debug=False)
+        print("credentials: var/credentials.json  (not in git)")
+        app.run(host=host, port=port, debug=False, use_reloader=False, threaded=True)
         return 0
 
     def _register(self, app: Flask):
@@ -96,6 +100,10 @@ class Plugin:
         @app.context_processor
         def inject():
             return {"fmt_bytes": _fmt_bytes, "user": current_user()}
+
+        @app.route("/healthz")
+        def healthz():
+            return "ok\n", 200, {"Content-Type": "text/plain"}
 
         @app.route("/login", methods=["GET", "POST"])
         def login():
