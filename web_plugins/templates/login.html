@@ -34,9 +34,14 @@
         <button type="submit" class="btn btn-primary btn-block">Sign in</button>
       </form>
       <p class="mt-3 mb-0 text-muted small">
-        Local passwords and API keys: <code>var/credentials.json</code>
-        (created by <code>python3 scripts/issue_credentials.py</code>).
+        That path is a <strong>file on disk</strong>, not a page in this site.
+        Do not open it in the browser. In a terminal:
       </p>
+      <pre class="small bg-dark text-light p-2 mt-2" style="white-space:pre-wrap">cat {{ credentials_path }}</pre>
+      {% if not credentials_exist %}
+      <p class="text-warning small">File missing. From the data-gov repo: <code>python3 scripts/issue_credentials.py</code></p>
+      {% endif %}
+      <p class="small text-muted mb-0">Person login: username <code>harvey</code> (password is in that file, field <code>people.harvey</code>).</p>
     </div>
   </div>
 </div>

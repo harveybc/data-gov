@@ -122,7 +122,14 @@ class Plugin:
                     session["user"] = user
                     return redirect(url_for("dashboard"))
                 flash("Invalid credentials.", "danger")
-            return render_template("login.html")
+            creds = (
+                Path(__file__).resolve().parents[1] / "var" / "credentials.json"
+            )
+            return render_template(
+                "login.html",
+                credentials_path=str(creds),
+                credentials_exist=creds.is_file(),
+            )
 
         @app.route("/logout")
         def logout():
