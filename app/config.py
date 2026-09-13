@@ -1,0 +1,17 @@
+DEFAULT_VALUES = {
+    "pipeline_plugin": "default_pipeline",
+    "web_plugin": "default_web",
+    "authn_plugin": "default_authn",
+    "authz_plugin": "default_authz",
+    "accounting_plugin": "default_accounting",
+    "inventory_plugin": "default_inventory",
+    "role_plugin": "default_role",
+    "load_config": None,
+    "save_config": "./config_out.json",
+    "quiet_mode": False,
+    "web_host": "127.0.0.1",
+    "web_port": 5055,
+    "secret_key": "change-me-in-config",
+    "accounting_db": "./data_gov_accounting.db",
+    "session_hours": 12,
+}

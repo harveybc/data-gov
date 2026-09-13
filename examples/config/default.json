@@ -1,0 +1,39 @@
+{
+  "pipeline_plugin": "default_pipeline",
+  "web_plugin": "default_web",
+  "authn_plugin": "default_authn",
+  "authz_plugin": "default_authz",
+  "accounting_plugin": "default_accounting",
+  "inventory_plugin": "default_inventory",
+  "role_plugin": "default_role",
+  "web_host": "127.0.0.1",
+  "web_port": 5055,
+  "secret_key": "change-me-in-config",
+  "accounting_db": "./data_gov_accounting.db",
+  "seed_demo_logs": true,
+  "users": {
+    "demo": {
+      "password": "demo",
+      "display_name": "Demo operator",
+      "role": "operator"
+    }
+  },
+  "lakes": [
+    {
+      "plugin": "default_lake",
+      "lake_id": "financial_files",
+      "title": "Financial files",
+      "description": "Inventory-backed file lake (demo). Replace with a real adapter later.",
+      "kind": "files_inventory",
+      "root_path": "examples/data/financial_files"
+    },
+    {
+      "plugin": "default_lake",
+      "lake_id": "olap_lab",
+      "title": "OLAP lab",
+      "description": "Treat an OLAP cube as another lake (demo directory until the SQL adapter exists).",
+      "kind": "sql_olap",
+      "root_path": "examples/data/olap_lab"
+    }
+  ]
+}

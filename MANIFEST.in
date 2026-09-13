@@ -1,0 +1,6 @@
+include README.md
+include AGENTS.md
+include requirements.txt
+recursive-include web_plugins/templates *.html
+recursive-include examples *
+recursive-include docs *

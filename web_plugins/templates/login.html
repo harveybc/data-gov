@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>data-gov · sign in</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="hold-transition login-page dark-mode">
+<div class="login-box">
+  <div class="login-logo">
+    <b>data</b>-gov
+  </div>
+  <div class="card">
+    <div class="card-body login-card-body">
+      <p class="login-box-msg">Governance of your lakes. Automatic policy. No ticket on a GET.</p>
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for cat, msg in messages %}
+          <div class="alert alert-{{ cat }}">{{ msg }}</div>
+        {% endfor %}
+      {% endwith %}
+      <form method="post">
+        <div class="input-group mb-3">
+          <input type="text" name="username" class="form-control" placeholder="username" value="demo" autofocus>
+          <div class="input-group-append"><div class="input-group-text"><i class="fas fa-user"></i></div></div>
+        </div>
+        <div class="input-group mb-3">
+          <input type="password" name="password" class="form-control" placeholder="password" value="demo">
+          <div class="input-group-append"><div class="input-group-text"><i class="fas fa-lock"></i></div></div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Sign in</button>
+      </form>
+      <p class="mt-3 mb-0 text-muted small">Skeleton login: <code>demo</code> / <code>demo</code>. Change users in the JSON config.</p>
+    </div>
+  </div>
+</div>
+</body>
+</html>
