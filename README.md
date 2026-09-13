@@ -1,106 +1,178 @@
 # data-gov
 
-Sistema de **gobernanza de datos** para varios lakes (remotos u on-prem).
-No es un catálogo cloud, no es Gravitino, no es un AAA suelto.
+Data **governance** for several lakes (on-prem or remote later). Not a
+cloud catalog, not Gravitino, not a thin AAA toy.
 
-Hace tres cosas a la vez:
+It does three jobs:
 
-1. **Núcleo** — inventario, políticas automáticas, accounting (hashes, allow/deny, experimento).
-2. **Adaptadores de lake** — cada lake se enchufa; `financial-data` y un OLAP son los primeros, no el techo.
-3. **Roles** — prompts Hermes que despiertan **solo con evento**. CEO (humano) e ingeniero de datos (Musashi) no se automatizan. El científico de datos (Satoshi-shaped) **no autoriza** un `GET`.
+1. **Kernel** — inventory, automatic policy, accounting (hashes, allow/deny, experiment id).
+2. **Lake adapters** — each lake is a plugin. `financial-data` and a lab OLAP are the first two, not the ceiling.
+3. **Roles** — Hermes prompts that fire **only on events**. CEO (Harvey) and data engineer (Musashi) stay human. A data-scientist prompt must **not** gate a `GET`.
 
-El experimento no espera un ticket. Allow/deny es código + inventario.
+Experiments do not wait for a ticket. Allow/deny is code + inventory.
 
-Contrato: [`docs/00_CONTRATO.md`](docs/00_CONTRATO.md).
+| Doc | What |
+|---|---|
+| [docs/00_CONTRATO.md](docs/00_CONTRATO.md) | Product contract |
+| [docs/01_WORKPLAN.md](docs/01_WORKPLAN.md) | Phases G0–G7 |
+| [docs/02_DESIGN.md](docs/02_DESIGN.md) | Plugin types and HTTP API |
+| [docs/03_LAKE_ADAPTER.md](docs/03_LAKE_ADAPTER.md) | **How to build/connect a lake** |
 
-## Plugins (setuptools, igual que predictor)
+## Requirements
 
-Seis tipos. Autenticación y política son **un** plugin (`access`). El inventario es `lake.discover()`, no un tipo aparte. Los roles Hermes son config/prompts de un solo despachador.
+- Python **3.10+** (exercised on 3.12).
+- `pip` packages in `requirements.txt`: Flask, pandas, pyarrow, pytest.
+- A checkout of this repo. Optional sibling `../financial-data` for the real file lake.
+- Nothing on the GPU. Do not stop Postgres/Metabase/training jobs you did not start.
+- Port **5055** free on localhost.
 
-| Grupo | Oficio | Default |
-|---|---|---|
-| `datagov.pipeline` | Orquesta | `default_pipeline` |
-| `datagov.web` | UI AdminLTE + API HTTP | `default_web` |
-| `datagov.access` | Personas, API keys, políticas | `default_access` |
-| `datagov.accounting` | Bitácora append-only | `default_accounting` |
-| `datagov.lake` | Adaptador | `files_lake`, `sql_lake` |
-| `datagov.role` | Eventos (sin Hermes hasta que haya evento) | `default_role` |
-
-Merge de config (más tarde gana), misma casa que predictor:
-
-`plugin_params` → `app/config.py` defaults → JSON `--load_config` → flags largos `--…` (los cortos no).
-
-Los lakes se listan en el JSON (`lakes[].plugin`, `lake_id`, `root_path`, …).
+No Docker. No Keycloak in this phase. No S3.
 
 ## Install
-
-Python 3.10+ (ejercido en 3.12).
 
 ```bash
 git clone https://github.com/harveybc/data-gov.git
 cd data-gov
 python3 -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 pip install -e .
+python3 scripts/issue_credentials.py   # writes var/credentials.json (gitignored)
+python3 scripts/seed_olap.py           # lab sqlite cube
+python3 -m pytest tests -q
 ```
 
-`setup.py` declara un `install_requires` mínimo; usa `requirements.txt` como lista de trabajo.
+`setup.py` `install_requires` is the runtime set; `requirements.txt` is what we actually install.
 
-## Uso básico
+If `var/credentials.json` already exists, `issue_credentials.py` will not overwrite it.
 
-Desde el checkout:
+## Run
+
+The process must **stay running**:
 
 ```bash
 PYTHONPATH=. python3 -m app.main --load_config examples/config/default.json
-# o: sh scripts/serve.sh
+# same: sh scripts/serve.sh
 ```
 
-El proceso tiene que **quedar corriendo**. Luego **http://127.0.0.1:5055** (login). CSS va por `/static/`, no por CDN.
+Then open **http://127.0.0.1:5055/login** (not `/var/credentials.json` — that path is a **disk file**, not a web page).
 
-Personas: usuario/clave en `var/credentials.json` (gitignored; se crea con `python3 scripts/issue_credentials.py`).
-Servicios (`predictor`, `doin`, `heuristic-strategy`): API key Bearer + header `X-Experiment-Key` en cada `read`/`query`.
+Person login:
+
+```bash
+cat var/credentials.json
+```
+
+Use username `harvey` (or `musashi`) and the password under `people.<name>`.
+CSS is served from `/static/` in this repo (no CDN).
+
+Stop: Ctrl+C.
+
+### Service clients (predictor, DOIN, heuristic-strategy)
+
+API keys are in the same file under `services.<name>`. Every `read` / `query` needs:
+
+```
+Authorization: Bearer <api_key>
+X-Experiment-Key: <run id>
+```
 
 ```python
 from app.client import DataGovClient
-gov = DataGovClient("http://127.0.0.1:5055", api_key="…", experiment_key="ann_1575_1d")
-gov.read("financial_files", "market_data/crypto/funding_rates/btcusdt/funding_rates.parquet",
-         start="2020-01-01", end="2020-01-31")
+
+gov = DataGovClient(
+    "http://127.0.0.1:5055",
+    api_key="<services.predictor>",
+    experiment_key="ann_1575_1d",
+)
+status, body = gov.read(
+    "financial_files",
+    "market_data/crypto/funding_rates/btcusdt/funding_rates.parquet",
+    start="2020-01-01",
+    end="2020-01-31",
+)
 ```
 
-Holdout automático: rangos ≥ `2025-01-01` se deniegan y quedan en accounting.
+Holdout: timestamps on or after **2025-01-01** are denied and logged.
+No experiment header → 403 and a deny row.
 
-Lo que ves:
+## Use it with an agent
 
-- Dashboard de **lakes que el usuario puede ver**
-- Operaciones registradas, recursos inventariados
-- **Espacio libre del host** de cada lake
-- Últimos **warnings** del accounting
-- Click en un lake → descripción, inventario, log de uso, estadísticas por **operación** y por **actor**
+Open **this** repository in Claude, Cursor, Codex, Copilot, Grok, … and paste:
 
-Este esqueleto usa dos lakes demo (`financial_files`, `olap_lab`) sobre carpetas locales. Los adaptadores reales (API de `financial-data`, SQL del cubo) vienen después.
+> Read `AGENTS.md` and follow the **Agent quickstart**. Create a venv,
+> `pip install -r requirements.txt && pip install -e .`, run
+> `python3 scripts/issue_credentials.py` if `var/credentials.json` is
+> missing, `python3 scripts/seed_olap.py`, `python3 -m pytest tests -q`.
+> Start the UI with `sh scripts/serve.sh` and leave it running. Tell me
+> http://127.0.0.1:5055/login , that credentials are the **file**
+> `var/credentials.json` (not a URL), and do not print the passwords in
+> git. Do not stop GPU/Postgres/Metabase. Do not add S3/Gravitino.
 
-Parar: Ctrl+C. No toca GPU, Postgres de campañas, ni Metabase.
+Longer lake work: [docs/03_LAKE_ADAPTER.md](docs/03_LAKE_ADAPTER.md).
+
+## How a data lake must be built to use this AAA
+
+Short version (full text in the adapter doc):
+
+1. Clients never `open()` the lake. They call data-gov.
+2. The lake is a **setuptools plugin** in group `datagov.lake` (or, later, the same verbs over HTTP — not shipped yet).
+3. It must implement `discover` (inventory), `describe`, `storage`, and either `read`+`coverage` (files) or `query` (SQL, SELECT only).
+4. `discover` is the inventory. Unknown `resource_id` → deny.
+5. Register it in `setup.py`, `pip install -e .`, add a `lakes[]` entry and `policies[]` in the JSON.
+6. Reuse `files_lake` if it is a directory of csv/parquet; reuse `sql_lake` if it is SQLite. New kinds = new plugin, same group.
+
+Shipped examples:
+
+| `lake_id` | Plugin | What |
+|---|---|---|
+| `financial_files` | `files_lake` | Sibling `../financial-data`, glob on one BTC funding parquet |
+| `olap_lab` | `sql_lake` | `examples/data/olap_lab/olap.sqlite` (not the campaign Postgres) |
+
+## Plugins (setuptools, same as predictor)
+
+Six types. AuthN+AuthZ are one plugin. Inventory is `lake.discover()`. Roles are one dispatcher.
+
+| Group | Job | Names |
+|---|---|---|
+| `datagov.pipeline` | Orchestrate | `default_pipeline` |
+| `datagov.web` | AdminLTE UI + HTTP API | `default_web` |
+| `datagov.access` | People, API keys, policies | `default_access` |
+| `datagov.accounting` | Append-only log | `default_accounting` |
+| `datagov.lake` | Adapters | `files_lake`, `sql_lake` |
+| `datagov.role` | Events (no Hermes until an event exists) | `default_role` |
+
+Config merge (later wins): `plugin_params` → `app/config.py` → `--load_config` JSON → long `--flags` only.
+
+## What you see in the UI
+
+- Lakes the logged-in person is allowed to see
+- Host free space per lake, inventoried resources, operation counts
+- Last accounting warnings
+- Click a lake: description, inventory, usage log, stats by operation and by actor
 
 ## Layout
 
 ```
-app/                    CLI, defaults, merge, plugin loader
-pipeline_plugins/
-web_plugins/            AdminLTE (CDN, mismo patrón que doin-node)
-authn_plugins/
-authz_plugins/
+app/                   CLI, merge, plugin loader, DataGovClient
+access_plugins/
 accounting_plugins/
-inventory_plugins/
-lake_plugins/
+lake_plugins/          files_lake, sql_lake
+pipeline_plugins/
 role_plugins/
-examples/config/
-examples/data/
-docs/00_CONTRATO.md
+web_plugins/           templates + vendored AdminLTE under static/
+examples/config/       default.json (hashes only)
+examples/data/olap_lab/
+docs/
+scripts/serve.sh
+scripts/issue_credentials.py
+scripts/seed_olap.py
+tests/                 user / system / integration / unit
+var/                   gitignored: credentials.json, accounting.db
 ```
 
-## Qué no es este repo
+## What this repo is not
 
-- No es `data-logger` (eso es telemetría ESP32 / ThingsBoard).
-- No gobierna por “abrir el CSV en el disco”. El cliente, cuando exista el API de lake, pasa por aquí.
-- No hay porteros humanos en el hot path. Hermes no se despierta “por si acaso”.
+- Not `data-logger` (ESP32 / ThingsBoard telemetry). That may become a lake plugin later.
+- Not a human approval queue. Musashi/Satoshi are not on the read hot path.
+- Not the populated campaign OLAP. `olap_lab` is a throwaway sqlite.

@@ -22,17 +22,31 @@ Holdout starts 2025-01-01 (financial-data catalog). Service calls without
 `data-logger` is a different product (sensor telemetry). Do not merge them.
 A telemetry site may become a **lake adapter** later.
 
+How a lake must be built: `docs/03_LAKE_ADAPTER.md`.
+
 ## Agent quickstart
 
 ```bash
 cd data-gov
+python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 pip install -e .
+test -f var/credentials.json || python3 scripts/issue_credentials.py
+python3 scripts/seed_olap.py
+python3 -m pytest tests -q
+# leave this running:
 PYTHONPATH=. python3 -m app.main --load_config examples/config/default.json
 ```
 
-Open http://127.0.0.1:5055 — `demo` / `demo`. Force CPU. Do not stop GPU,
-Postgres, or Metabase processes you did not start. Do not write host names
+Tell the user:
+
+- UI: http://127.0.0.1:5055/login
+- `var/credentials.json` is a **filesystem** path in the checkout, not a
+  URL. `cat var/credentials.json`. Username `harvey`.
+- Do not print passwords into git or the README.
+- `/healthz` must return `ok`.
+
+Force CPU. Do not stop GPU, Postgres, or Metabase. Do not write host names
 or credentials into committed files.
 
 ## Do not
@@ -41,3 +55,5 @@ or credentials into committed files.
 - Put Musashi or Satoshi on the read hot path.
 - Poll Hermes on a timer with no event.
 - Treat the demo SQLite log as production evidence.
+- Serve `var/credentials.json` over HTTP.
+- Claim remote lake HTTP adapters (G7) are implemented.
