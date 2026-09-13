@@ -64,8 +64,8 @@
     {
       "plugin": "files_lake",
       "lake_id": "financial_files",
-      "title": "Financial files",
-      "description": "Sibling financial-data lake (glob, not the whole 2GB tree).",
+      "title": "Financial files (pilot: 1 parquet)",
+      "description": "Not the whole financial-data lake. Only btcusdt funding_rates.parquet via glob. AAA works on that file (read, hash, holdout). ~1662 other files are not inventoried.",
       "kind": "files_inventory",
       "root_path": "../financial-data",
       "include_globs": [
@@ -77,8 +77,8 @@
     {
       "plugin": "sql_lake",
       "lake_id": "olap_lab",
-      "title": "OLAP lab",
-      "description": "SQLite cube for governance tests. Not the populated campaign database.",
+      "title": "OLAP lab (sqlite toy, 3 rows)",
+      "description": "Not the campaign Postgres cube. Local sqlite fact_performance for AAA tests (SELECT, holdout). Do not treat this as production OLAP.",
       "kind": "sql_olap",
       "sqlite_path": "examples/data/olap_lab/olap.sqlite",
       "time_column": "ts",
