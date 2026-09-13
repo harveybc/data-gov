@@ -24,6 +24,18 @@ A telemetry site may become a **lake adapter** later.
 
 How a lake must be built: `docs/03_LAKE_ADAPTER.md`.
 
+Flow v2 (`docs/04_FLOW_V2.md`, the contract): an agent downloads a dataset **as a
+file** (`GET /api/v1/download`, `DataGovClient.download`), data-gov records who, when,
+which resource and the sha256 of the delivered bytes, and at the end the agent
+`report_metrics` naming the target lake and the sha256 of every dataset it used;
+data-gov verifies those bytes were served under that experiment (or set) key, writes
+the canonical report into the lake's `gov_*` tables and one accounting row. Files
+that span the holdout are served only as day-ranged cuts on the column's own wall
+clock, materialised once under `var/cuts/`; spool files live under `var/spool/` and
+are swept at start; `source_changed` fires inline when a source file's hash differs
+from its last download. Do not add cloud, Keycloak, OPA or any external service; a
+new lake is an adapter plus a config block.
+
 ## Agent quickstart
 
 ```bash
