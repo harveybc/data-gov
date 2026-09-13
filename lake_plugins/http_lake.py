@@ -2,10 +2,16 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
+import uuid
+from pathlib import Path
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
+
+from app.httpstream import BufferedResponse, filename_from_disposition, open_stream
+from lake_plugins.errors import UnsupportedError
 
 
 class Plugin:
@@ -16,6 +22,8 @@ class Plugin:
         "kind": "http",
         "base_url": "http://127.0.0.1:5056",
         "root_path": "",
+        "spool_dir": "./var/spool",
+        "max_downloads": 2,
     }
 
     def __init__(self):
@@ -63,6 +71,25 @@ class Plugin:
         except URLError as exc:
             raise RuntimeError(f"lake unreachable: {exc}") from exc
 
+    def _open(self, path: str, params=None, method="GET", json_body=None):
+        """Streamed request: a connect timeout only; the test hook buffers the same surface."""
+        headers = self._headers()
+        if self._opener is not None:
+            if method == "POST":
+                response = self._opener.post(path, json=json_body, headers=headers)
+            else:
+                response = self._opener.get(path, query_string=params or {}, headers=headers)
+            return BufferedResponse(response.status_code, response.headers, response.data)
+        url = self.params.get("base_url", "").rstrip("/") + path
+        body = None
+        if json_body is not None:
+            body = json.dumps(json_body).encode()
+            headers["Content-Type"] = "application/json"
+        try:
+            return open_stream(url, headers=headers, params=params, method=method, body=body)
+        except OSError as exc:
+            raise RuntimeError(f"lake unreachable: {exc}") from exc
+
     def _raise_http(self, status, body):
         err = (body or {}).get("error") or f"http {status}"
         if status == 401:
@@ -73,6 +100,8 @@ class Plugin:
             raise FileNotFoundError(err)
         if status == 400:
             raise ValueError(err)
+        if status == 422:
+            raise UnsupportedError(err)
         if status >= 400:
             raise RuntimeError(err)
 
@@ -122,3 +151,57 @@ class Plugin:
 
     def query(self, sql: str):
         return self._get("/api/v1/query", {"sql": sql})
+
+    def download(self, resource_id: str, start=None, end=None):
+        """Stream the lake's body into a spool file, hashing as it passes; the lake's hash is
+        checked, never trusted. The caller unlinks the spool file right after opening it."""
+        response = self._open(
+            "/api/v1/download", {"resource": resource_id, "from": start, "to": end}
+        )
+        spool = Path(self.params.get("spool_dir") or "./var/spool").resolve()
+        spool.mkdir(parents=True, exist_ok=True)
+        part = spool / f"{uuid.uuid4().hex}.part"
+        digest = hashlib.sha256()
+        size = 0
+        try:
+            if response.status != 200:
+                self._raise_http(response.status, response.read_json())
+            with open(part, "wb") as out:
+                for chunk in response.iter_chunks():
+                    digest.update(chunk)
+                    out.write(chunk)
+                    size += len(chunk)
+        except BaseException:
+            part.unlink(missing_ok=True)
+            raise
+        finally:
+            response.close()
+        claimed = (response.header("X-Content-SHA256") or "").lower()
+        if digest.hexdigest() != claimed:
+            part.unlink(missing_ok=True)
+            raise RuntimeError("lake hash mismatch")
+        filename = filename_from_disposition(response.header("Content-Disposition"))
+        return {
+            "path": str(part),
+            "filename": filename or Path(resource_id).name,
+            "sha256": claimed,
+            "bytes": size,
+            "source_sha256": response.header("X-Source-SHA256"),
+            "delivery": response.header("X-Delivery"),
+            "time_column": response.header("X-Time-Column") or "",
+            "spool": True,
+        }
+
+    def write_metrics(self, report: dict):
+        response = self._open("/api/v1/metrics", method="POST", json_body=report)
+        try:
+            body = response.read_json()
+        finally:
+            response.close()
+        if response.status not in (200, 201):
+            self._raise_http(response.status, body)
+        return {
+            "stored": bool(body.get("stored")),
+            "already_stored": bool(body.get("already_stored")),
+            "lineage": body.get("lineage"),
+        }

@@ -63,13 +63,8 @@ class Plugin:
             "kind": record.get("kind"),
         }
 
-    def authorize(self, principal, lake_id, verb, start=None, end=None):
-        if not principal:
-            return False, "unauthenticated"
-        policies = self.params.get("policies") or []
-        matched = False
-        deny_from = None
-        for policy in policies:
+    def _matching(self, principal, lake_id, verb):
+        for policy in self.params.get("policies") or []:
             who = policy.get("principal") or "*"
             if who not in {"*", principal["username"]}:
                 continue
@@ -78,6 +73,24 @@ class Plugin:
             verbs = policy.get("verbs") or []
             if verb not in verbs and "*" not in verbs:
                 continue
+            yield policy
+
+    def policy_attr(self, principal, lake_id, verb, name, default=None):
+        """Attribute of the policies granting `verb` on `lake_id` (last matching policy wins)."""
+        value = default
+        if not principal:
+            return value
+        for policy in self._matching(principal, lake_id, verb):
+            if name in policy:
+                value = policy[name]
+        return value
+
+    def authorize(self, principal, lake_id, verb, start=None, end=None):
+        if not principal:
+            return False, "unauthenticated"
+        matched = False
+        deny_from = None
+        for policy in self._matching(principal, lake_id, verb):
             matched = True
             if policy.get("deny_from"):
                 deny_from = _parse_day(policy["deny_from"])

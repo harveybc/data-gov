@@ -9,6 +9,9 @@
   "secret_key": "change-me-in-config",
   "password_salt": "datagov-v1",
   "accounting_db": "./var/accounting.db",
+  "spool_dir": "./var/spool",
+  "cuts_dir": "./var/cuts",
+  "max_downloads": 2,
   "seed_demo_logs": false,
   "principals": {
     "harvey": {
@@ -46,7 +49,8 @@
       "verbs": [
         "discover",
         "coverage",
-        "read"
+        "read",
+        "download"
       ],
       "deny_from": "2025-01-01"
     },
@@ -55,7 +59,20 @@
       "lake": "olap_cube",
       "verbs": [
         "discover",
-        "query"
+        "query",
+        "write_metrics"
+      ],
+      "require_lineage": true,
+      "deny_from": "2025-01-01"
+    },
+    {
+      "principal": "*",
+      "lake": "predictor_examples",
+      "verbs": [
+        "discover",
+        "coverage",
+        "read",
+        "download"
       ],
       "deny_from": "2025-01-01"
     }
@@ -74,9 +91,22 @@
       "plugin": "http_lake",
       "lake_id": "olap_cube",
       "title": "predictor OLAP cube",
-      "description": "Read-only cube service at :5057 (PG*). Never reset_olap. AAA here.",
+      "description": "Cube service at :5057 (PG*): SELECT-only query, append-only gov_* via write_metrics. Never reset_olap. AAA here.",
       "kind": "http",
       "base_url": "http://127.0.0.1:5057",
+      "holdout_start": "2025-01-01"
+    },
+    {
+      "plugin": "files_lake",
+      "lake_id": "predictor_examples",
+      "title": "predictor examples",
+      "description": "In-process file lake over the predictor sample data (downsampled CSVs). Governed downloads for the lab path.",
+      "kind": "files_inventory",
+      "root_path": "../predictor/examples/data_downsampled",
+      "include_globs": [
+        "**/*.csv"
+      ],
+      "time_column": "DATE_TIME",
       "holdout_start": "2025-01-01"
     }
   ]

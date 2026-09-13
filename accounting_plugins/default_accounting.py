@@ -3,8 +3,14 @@
 from __future__ import annotations
 
 import sqlite3
+import threading
 from datetime import datetime, timezone
 from pathlib import Path
+
+COLUMNS = (
+    "id, ts, actor, lake_id, verb, resource_id, decision, bytes, sha256, "
+    "experiment_key, warning, detail"
+)
 
 
 def _utc():
@@ -19,6 +25,8 @@ class Plugin:
     def __init__(self):
         self.params = dict(self.plugin_params)
         self._conn = None
+        # one shared connection, one lock: sqlite3 connections are not thread-safe
+        self._lock = threading.Lock()
 
     def set_params(self, **kwargs):
         self.params.update(kwargs)
@@ -28,7 +36,7 @@ class Plugin:
         if self._conn is None:
             path = Path(self.params.get("accounting_db") or "./data_gov_accounting.db")
             path.parent.mkdir(parents=True, exist_ok=True)
-            self._conn = sqlite3.connect(str(path), check_same_thread=False)
+            self._conn = sqlite3.connect(str(path), check_same_thread=False, timeout=30)
             self._conn.row_factory = sqlite3.Row
             self._conn.execute(
                 """
@@ -48,37 +56,57 @@ class Plugin:
                 )
                 """
             )
+            self._conn.execute(
+                "CREATE INDEX IF NOT EXISTS ix_events_sha256 ON events(sha256)"
+            )
+            self._conn.execute(
+                "CREATE INDEX IF NOT EXISTS ix_events_experiment ON events(experiment_key)"
+            )
+            self._conn.execute(
+                "CREATE INDEX IF NOT EXISTS ix_events_lake_resource ON events(lake_id, resource_id)"
+            )
             self._conn.commit()
         return self._conn
 
+    def _rows(self, sql, params=()):
+        with self._lock:
+            rows = self._db().execute(sql, params).fetchall()
+        return [dict(row) for row in rows]
+
+    def _one(self, sql, params=()):
+        with self._lock:
+            row = self._db().execute(sql, params).fetchone()
+        return dict(row) if row else None
+
     def record(self, **fields):
-        conn = self._db()
-        conn.execute(
-            """
-            INSERT INTO events (
-                ts, actor, lake_id, verb, resource_id, decision,
-                bytes, sha256, experiment_key, warning, detail
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                fields.get("ts") or _utc(),
-                fields.get("actor"),
-                fields.get("lake_id"),
-                fields.get("verb") or "unknown",
-                fields.get("resource_id"),
-                fields.get("decision"),
-                fields.get("bytes"),
-                fields.get("sha256"),
-                fields.get("experiment_key"),
-                fields.get("warning"),
-                fields.get("detail"),
-            ),
-        )
-        conn.commit()
+        with self._lock:
+            conn = self._db()
+            cur = conn.execute(
+                """
+                INSERT INTO events (
+                    ts, actor, lake_id, verb, resource_id, decision,
+                    bytes, sha256, experiment_key, warning, detail
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    fields.get("ts") or _utc(),
+                    fields.get("actor"),
+                    fields.get("lake_id"),
+                    fields.get("verb") or "unknown",
+                    fields.get("resource_id"),
+                    fields.get("decision"),
+                    fields.get("bytes"),
+                    fields.get("sha256"),
+                    fields.get("experiment_key"),
+                    fields.get("warning"),
+                    fields.get("detail"),
+                ),
+            )
+            conn.commit()
+            return cur.lastrowid
 
     def seed_demo_if_empty(self, lake_ids):
-        conn = self._db()
-        n = conn.execute("SELECT COUNT(*) FROM events").fetchone()[0]
+        n = self._one("SELECT COUNT(*) AS n FROM events")["n"]
         if n:
             return
         samples = [
@@ -104,7 +132,7 @@ class Plugin:
             )
 
     def warnings(self, limit=8):
-        rows = self._db().execute(
+        return self._rows(
             """
             SELECT ts, actor, lake_id, verb, warning
             FROM events
@@ -113,74 +141,108 @@ class Plugin:
             LIMIT ?
             """,
             (limit,),
-        ).fetchall()
-        return [dict(row) for row in rows]
+        )
 
     def logs(self, lake_id, limit=200):
-        rows = self._db().execute(
-            """
-            SELECT ts, actor, verb, resource_id, decision, bytes, sha256,
-                   experiment_key, warning, detail
+        return self._rows(
+            f"""
+            SELECT {COLUMNS}
             FROM events
             WHERE lake_id = ?
             ORDER BY id DESC
             LIMIT ?
             """,
             (lake_id, limit),
-        ).fetchall()
-        return [dict(row) for row in rows]
+        )
 
     def stats_by_verb(self, lake_id):
-        rows = self._db().execute(
+        return self._rows(
             """
             SELECT verb, COUNT(*) AS n, COALESCE(SUM(bytes), 0) AS bytes
             FROM events WHERE lake_id = ?
             GROUP BY verb ORDER BY n DESC
             """,
             (lake_id,),
-        ).fetchall()
-        return [dict(row) for row in rows]
+        )
 
     def stats_by_actor(self, lake_id):
-        rows = self._db().execute(
+        return self._rows(
             """
             SELECT COALESCE(actor, 'unknown') AS actor, COUNT(*) AS n
             FROM events WHERE lake_id = ?
             GROUP BY actor ORDER BY n DESC
             """,
             (lake_id,),
-        ).fetchall()
-        return [dict(row) for row in rows]
+        )
 
     def request_count(self, lake_id):
-        row = self._db().execute(
+        row = self._one(
             "SELECT COUNT(*) AS n FROM events WHERE lake_id = ?",
             (lake_id,),
-        ).fetchone()
+        )
         return int(row["n"] if row else 0)
 
     def logs_all(self, limit=500):
-        rows = self._db().execute(
-            """
-            SELECT ts, actor, lake_id, verb, resource_id, decision, bytes,
-                   sha256, experiment_key, warning, detail
+        return self._rows(
+            f"""
+            SELECT {COLUMNS}
             FROM events
             ORDER BY id DESC
             LIMIT ?
             """,
             (limit,),
-        ).fetchall()
-        return [dict(row) for row in rows]
+        )
 
-    def usage(self, experiment_key):
-        rows = self._db().execute(
-            """
-            SELECT ts, actor, lake_id, verb, resource_id, decision, bytes,
-                   sha256, experiment_key, warning, detail
-            FROM events
-            WHERE experiment_key = ?
-            ORDER BY id DESC
+    def usage(self, experiment_key, limit=1000, before_id=None):
+        """Exactly WHERE experiment_key = ?; newest first, paged with before_id."""
+        sql = f"SELECT {COLUMNS} FROM events WHERE experiment_key = ?"
+        params = [experiment_key]
+        if before_id is not None:
+            sql += " AND id < ?"
+            params.append(int(before_id))
+        sql += " ORDER BY id DESC LIMIT ?"
+        params.append(int(limit))
+        return self._rows(sql, tuple(params))
+
+    def usage_by_sha256(self, sha256, limit=1000, before_id=None):
+        """Allow downloads of exactly those bytes, newest first."""
+        sql = (
+            f"SELECT {COLUMNS} FROM events "
+            "WHERE sha256 = ? AND verb = 'download' AND decision = 'allow'"
+        )
+        params = [sha256]
+        if before_id is not None:
+            sql += " AND id < ?"
+            params.append(int(before_id))
+        sql += " ORDER BY id DESC LIMIT ?"
+        params.append(int(limit))
+        return self._rows(sql, tuple(params))
+
+    def last_download(self, lake_id, resource_id):
+        """The most recent allow download of (lake, resource), or None."""
+        return self._one(
+            f"""
+            SELECT {COLUMNS} FROM events
+            WHERE lake_id = ? AND resource_id = ? AND verb = 'download' AND decision = 'allow'
+            ORDER BY id DESC LIMIT 1
             """,
-            (experiment_key,),
-        ).fetchall()
-        return [dict(row) for row in rows]
+            (lake_id, resource_id),
+        )
+
+    def find_download(self, lake_id, resource_id, sha256, actor, keys):
+        """The allow download row (with its id) that served these bytes to this actor under one
+        of `keys`, or None."""
+        keys = [k for k in (keys or []) if k]
+        if not keys:
+            return None
+        marks = ",".join("?" for _ in keys)
+        return self._one(
+            f"""
+            SELECT {COLUMNS} FROM events
+            WHERE sha256 = ? AND verb = 'download' AND decision = 'allow'
+              AND lake_id = ? AND resource_id = ? AND actor = ?
+              AND experiment_key IN ({marks})
+            ORDER BY id DESC LIMIT 1
+            """,
+            (sha256, lake_id, resource_id, actor, *keys),
+        )

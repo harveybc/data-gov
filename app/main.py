@@ -22,6 +22,7 @@ GROUPS = {
     "accounting_plugin": "datagov.accounting",
     "role_plugin": "datagov.role",
 }
+PATH_KEYS = ("root_path", "sqlite_path", "spool_dir", "cuts_dir")
 
 
 def _repo_root() -> Path:
@@ -33,6 +34,37 @@ def _instantiate(group: str, name: str, config: dict[str, Any]):
     plugin = cls()
     plugin.set_params(**config)
     return plugin
+
+
+def check_startup(config: dict[str, Any]) -> None:
+    """A lake with holdout_start is only served through policies that carry deny_from."""
+    problems = []
+    for lake in config.get("lakes") or []:
+        if not lake.get("holdout_start"):
+            continue
+        lake_id = lake.get("lake_id")
+        for policy in config.get("policies") or []:
+            if policy.get("lake") not in {lake_id, "*"}:
+                continue
+            if not policy.get("deny_from"):
+                problems.append(
+                    f"lake {lake_id!r} has holdout_start {lake['holdout_start']!r} but the "
+                    f"policy for principal {policy.get('principal') or '*'!r} has no deny_from"
+                )
+    if problems:
+        raise SystemExit("refusing to start:\n  " + "\n  ".join(problems))
+
+
+def sweep_spool(spool_dir) -> int:
+    """Remove files a crashed process left in the spool; returns how many."""
+    spool = Path(spool_dir)
+    spool.mkdir(parents=True, exist_ok=True)
+    removed = 0
+    for path in spool.iterdir():
+        if path.is_file():
+            path.unlink(missing_ok=True)
+            removed += 1
+    return removed
 
 
 def main(argv=None) -> int:
@@ -65,8 +97,13 @@ def main(argv=None) -> int:
         DEFAULT_VALUES, plugin_param_dicts, file_config, cli_args, unknown_args
     )
     root = _repo_root()
+    config.setdefault("spool_dir", "./var/spool")
+    config.setdefault("cuts_dir", "./var/cuts")
+    for key in ("spool_dir", "cuts_dir"):
+        if not Path(str(config[key])).is_absolute():
+            config[key] = str((root / str(config[key])).resolve())
     for lake in config.get("lakes") or []:
-        for key in ("root_path", "sqlite_path"):
+        for key in PATH_KEYS:
             rp = lake.get(key)
             if rp and not Path(str(rp)).is_absolute():
                 lake[key] = str((root / rp).resolve())
@@ -81,6 +118,8 @@ def main(argv=None) -> int:
     if secret_file.is_file():
         config["secret_key"] = secret_file.read_text(encoding="utf-8").strip()
 
+    check_startup(config)
+    sweep_spool(config["spool_dir"])
     plugins = assemble(config)
 
     save_path = config.get("save_config")

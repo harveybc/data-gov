@@ -6,6 +6,8 @@ venv/
 *.db
 *.db-shm
 *.db-wal
+*.sqlite-shm
+*.sqlite-wal
 config_out.json
 debug_out.json
 var/
