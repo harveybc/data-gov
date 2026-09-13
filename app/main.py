@@ -16,10 +16,8 @@ from app.plugin_loader import get_plugin_params, load_plugin
 GROUPS = {
     "pipeline_plugin": "datagov.pipeline",
     "web_plugin": "datagov.web",
-    "authn_plugin": "datagov.authn",
-    "authz_plugin": "datagov.authz",
+    "access_plugin": "datagov.access",
     "accounting_plugin": "datagov.accounting",
-    "inventory_plugin": "datagov.inventory",
     "role_plugin": "datagov.role",
 }
 
@@ -66,9 +64,10 @@ def main(argv=None) -> int:
     )
     root = _repo_root()
     for lake in config.get("lakes") or []:
-        rp = lake.get("root_path")
-        if rp and not Path(str(rp)).is_absolute():
-            lake["root_path"] = str((root / rp).resolve())
+        for key in ("root_path", "sqlite_path"):
+            rp = lake.get(key)
+            if rp and not Path(str(rp)).is_absolute():
+                lake[key] = str((root / rp).resolve())
     db = config.get("accounting_db")
     if db and not Path(str(db)).is_absolute():
         config["accounting_db"] = str((root / db).resolve())
@@ -86,13 +85,9 @@ def assemble(config: dict[str, Any]) -> dict[str, Any]:
     plugins = {
         "pipeline": _instantiate("datagov.pipeline", config["pipeline_plugin"], config),
         "web": _instantiate("datagov.web", config["web_plugin"], config),
-        "authn": _instantiate("datagov.authn", config["authn_plugin"], config),
-        "authz": _instantiate("datagov.authz", config["authz_plugin"], config),
+        "access": _instantiate("datagov.access", config["access_plugin"], config),
         "accounting": _instantiate(
             "datagov.accounting", config["accounting_plugin"], config
-        ),
-        "inventory": _instantiate(
-            "datagov.inventory", config["inventory_plugin"], config
         ),
         "role": _instantiate("datagov.role", config["role_plugin"], config),
         "lakes": {},

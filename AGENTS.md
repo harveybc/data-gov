@@ -12,8 +12,12 @@ CEO (Harvey) and data engineer (Musashi) stay human. Other governance and
 technical roles are prompts that fire **only on events**. The data-scientist
 role (Satoshi-shaped) must not gate a `GET`.
 
-Plugins resolve through setuptools entry points in `setup.py` (`datagov.*`
-groups). Config merge: plugin_params → defaults → JSON file → long-form CLI.
+Plugins resolve through setuptools entry points (`datagov.pipeline`,
+`web`, `access`, `accounting`, `lake`, `role`). Config merge:
+plugin_params → defaults → JSON file → long-form CLI.
+
+Holdout starts 2025-01-01 (financial-data catalog). Service calls without
+`X-Experiment-Key` are 403. Do not put plaintext API keys in git.
 
 `data-logger` is a different product (sensor telemetry). Do not merge them.
 A telemetry site may become a **lake adapter** later.

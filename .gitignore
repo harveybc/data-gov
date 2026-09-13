@@ -8,5 +8,9 @@ venv/
 *.db-wal
 config_out.json
 debug_out.json
+var/
+examples/config/local.json
 .pytest_cache/
+.coverage
+htmlcov/
 .DS_Store

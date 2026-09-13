@@ -1,39 +1,88 @@
 {
   "pipeline_plugin": "default_pipeline",
   "web_plugin": "default_web",
-  "authn_plugin": "default_authn",
-  "authz_plugin": "default_authz",
+  "access_plugin": "default_access",
   "accounting_plugin": "default_accounting",
-  "inventory_plugin": "default_inventory",
   "role_plugin": "default_role",
   "web_host": "127.0.0.1",
   "web_port": 5055,
   "secret_key": "change-me-in-config",
-  "accounting_db": "./data_gov_accounting.db",
-  "seed_demo_logs": true,
-  "users": {
-    "demo": {
-      "password": "demo",
-      "display_name": "Demo operator",
-      "role": "operator"
+  "password_salt": "datagov-v1",
+  "accounting_db": "./var/accounting.db",
+  "seed_demo_logs": false,
+  "principals": {
+    "harvey": {
+      "kind": "person",
+      "password_hash": "353a8cbaf7cb75fd0f474d16283b61779b5b1cb35be657091553f42031d3685e",
+      "display_name": "Harvey",
+      "role": "ceo"
+    },
+    "musashi": {
+      "kind": "person",
+      "password_hash": "5cb76498d41f21b079f2422c7fac8928a8a5e9a432a3ef43272197b42fa0c1bb",
+      "display_name": "Musashi",
+      "role": "data_engineer"
+    },
+    "predictor": {
+      "kind": "service",
+      "api_key_hash": "bb0243618dcf0db526274ba9e1f27732ef1fbe1889bc67474a029dbdab5ce8a5",
+      "role": "service"
+    },
+    "doin": {
+      "kind": "service",
+      "api_key_hash": "c3110cd17fd84cffbc36406bfbf0b5d8fb7dd0867cc2d97225b41e4f6b73be07",
+      "role": "service"
+    },
+    "heuristic-strategy": {
+      "kind": "service",
+      "api_key_hash": "c8375db70473b2ca14add13262ad255b8820929afbaeb21e8d63c9dfe00da1ae",
+      "role": "service"
     }
   },
-  "lakes": [
+  "policies": [
     {
-      "plugin": "default_lake",
-      "lake_id": "financial_files",
-      "title": "Financial files",
-      "description": "Inventory-backed file lake (demo). Replace with a real adapter later.",
-      "kind": "files_inventory",
-      "root_path": "examples/data/financial_files"
+      "principal": "*",
+      "lake": "financial_files",
+      "verbs": [
+        "discover",
+        "coverage",
+        "read"
+      ],
+      "deny_from": "2025-01-01"
     },
     {
-      "plugin": "default_lake",
+      "principal": "*",
+      "lake": "olap_lab",
+      "verbs": [
+        "discover",
+        "query"
+      ],
+      "deny_from": "2025-01-01"
+    }
+  ],
+  "lakes": [
+    {
+      "plugin": "files_lake",
+      "lake_id": "financial_files",
+      "title": "Financial files",
+      "description": "Sibling financial-data lake (glob, not the whole 2GB tree).",
+      "kind": "files_inventory",
+      "root_path": "../financial-data",
+      "include_globs": [
+        "market_data/crypto/funding_rates/btcusdt/funding_rates.parquet"
+      ],
+      "time_column": "fundingTime",
+      "holdout_start": "2025-01-01"
+    },
+    {
+      "plugin": "sql_lake",
       "lake_id": "olap_lab",
       "title": "OLAP lab",
-      "description": "Treat an OLAP cube as another lake (demo directory until the SQL adapter exists).",
+      "description": "SQLite cube for governance tests. Not the populated campaign database.",
       "kind": "sql_olap",
-      "root_path": "examples/data/olap_lab"
+      "sqlite_path": "examples/data/olap_lab/olap.sqlite",
+      "time_column": "ts",
+      "holdout_start": "2025-01-01"
     }
   ]
 }

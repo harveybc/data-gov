@@ -158,3 +158,29 @@ class Plugin:
             (lake_id,),
         ).fetchone()
         return int(row["n"] if row else 0)
+
+    def logs_all(self, limit=500):
+        rows = self._db().execute(
+            """
+            SELECT ts, actor, lake_id, verb, resource_id, decision, bytes,
+                   sha256, experiment_key, warning, detail
+            FROM events
+            ORDER BY id DESC
+            LIMIT ?
+            """,
+            (limit,),
+        ).fetchall()
+        return [dict(row) for row in rows]
+
+    def usage(self, experiment_key):
+        rows = self._db().execute(
+            """
+            SELECT ts, actor, lake_id, verb, resource_id, decision, bytes,
+                   sha256, experiment_key, warning, detail
+            FROM events
+            WHERE experiment_key = ?
+            ORDER BY id DESC
+            """,
+            (experiment_key,),
+        ).fetchall()
+        return [dict(row) for row in rows]

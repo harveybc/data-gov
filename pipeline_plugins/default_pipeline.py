@@ -19,6 +19,4 @@ class Plugin:
         accounting = plugins["accounting"]
         if self.params.get("seed_demo_logs"):
             accounting.seed_demo_if_empty(list(plugins["lakes"]))
-        for lake in plugins["lakes"].values():
-            plugins["inventory"].sync_lake(lake)
         return plugins["web"].serve(context)

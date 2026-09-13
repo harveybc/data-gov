@@ -16,20 +16,16 @@ setup(
         "datagov.web": [
             "default_web=web_plugins.default_web:Plugin",
         ],
-        "datagov.authn": [
-            "default_authn=authn_plugins.default_authn:Plugin",
-        ],
-        "datagov.authz": [
-            "default_authz=authz_plugins.default_authz:Plugin",
+        "datagov.access": [
+            "default_access=access_plugins.default_access:Plugin",
         ],
         "datagov.accounting": [
             "default_accounting=accounting_plugins.default_accounting:Plugin",
         ],
-        "datagov.inventory": [
-            "default_inventory=inventory_plugins.default_inventory:Plugin",
-        ],
         "datagov.lake": [
             "default_lake=lake_plugins.default_lake:Plugin",
+            "files_lake=lake_plugins.files_lake:Plugin",
+            "sql_lake=lake_plugins.sql_lake:Plugin",
         ],
         "datagov.role": [
             "default_role=role_plugins.default_role:Plugin",
@@ -37,6 +33,8 @@ setup(
     },
     install_requires=[
         "flask>=3.0",
+        "pandas>=2.0",
+        "pyarrow>=14.0",
     ],
     author="Harvey Bastidas",
     description=(

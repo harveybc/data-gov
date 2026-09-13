@@ -15,18 +15,16 @@ Contrato: [`docs/00_CONTRATO.md`](docs/00_CONTRATO.md).
 
 ## Plugins (setuptools, igual que predictor)
 
-Grupos en `setup.py`. Cada grupo tiene un plugin `default_*`.
+Seis tipos. Autenticación y política son **un** plugin (`access`). El inventario es `lake.discover()`, no un tipo aparte. Los roles Hermes son config/prompts de un solo despachador.
 
 | Grupo | Oficio | Default |
 |---|---|---|
-| `datagov.pipeline` | Orquesta inventario + UI | `default_pipeline` |
-| `datagov.web` | Dashboard AdminLTE | `default_web` |
-| `datagov.authn` | Quién es el cliente | `default_authn` |
-| `datagov.authz` | Políticas automáticas | `default_authz` |
+| `datagov.pipeline` | Orquesta | `default_pipeline` |
+| `datagov.web` | UI AdminLTE + API HTTP | `default_web` |
+| `datagov.access` | Personas, API keys, políticas | `default_access` |
 | `datagov.accounting` | Bitácora append-only | `default_accounting` |
-| `datagov.inventory` | Autoinventario por lake | `default_inventory` |
-| `datagov.lake` | Adaptador de un lake | `default_lake` (directorio local) |
-| `datagov.role` | Eventos a roles Hermes | `default_role` (no llama Hermes aún) |
+| `datagov.lake` | Adaptador | `files_lake`, `sql_lake` |
+| `datagov.role` | Eventos (sin Hermes hasta que haya evento) | `default_role` |
 
 Merge de config (más tarde gana), misma casa que predictor:
 
@@ -60,7 +58,17 @@ PYTHONPATH=. python3 -m app.main --load_config examples/config/default.json
 
 Abre **http://127.0.0.1:5055**.
 
-Login de esqueleto: usuario `demo`, clave `demo` (cámbialo en el JSON).
+Personas: usuario/clave en `var/credentials.json` (gitignored; se crea con `python3 scripts/issue_credentials.py`).
+Servicios (`predictor`, `doin`, `heuristic-strategy`): API key Bearer + header `X-Experiment-Key` en cada `read`/`query`.
+
+```python
+from app.client import DataGovClient
+gov = DataGovClient("http://127.0.0.1:5055", api_key="…", experiment_key="ann_1575_1d")
+gov.read("financial_files", "market_data/crypto/funding_rates/btcusdt/funding_rates.parquet",
+         start="2020-01-01", end="2020-01-31")
+```
+
+Holdout automático: rangos ≥ `2025-01-01` se deniegan y quedan en accounting.
 
 Lo que ves:
 

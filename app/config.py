@@ -1,10 +1,8 @@
 DEFAULT_VALUES = {
     "pipeline_plugin": "default_pipeline",
     "web_plugin": "default_web",
-    "authn_plugin": "default_authn",
-    "authz_plugin": "default_authz",
+    "access_plugin": "default_access",
     "accounting_plugin": "default_accounting",
-    "inventory_plugin": "default_inventory",
     "role_plugin": "default_role",
     "load_config": None,
     "save_config": "./config_out.json",
