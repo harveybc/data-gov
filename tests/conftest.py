@@ -193,6 +193,22 @@ def gov_config(tmp_path):
                 "include_globs": ["**/*.csv"],
                 "time_column": "ts",
                 "untimed": [LAB_STATIC],
+                "resource_contracts": {
+                    LAB_HOURLY: {
+                        "event_time_column": "ts",
+                        "available_time_column": "ts",
+                        "timezone": "NAIVE_WALL_CLOCK",
+                        "time_unit": None,
+                        "frequency": "1h",
+                    },
+                    LAB_EARLY: {
+                        "event_time_column": "ts",
+                        "available_time_column": "ts",
+                        "timezone": "NAIVE_WALL_CLOCK",
+                        "time_unit": None,
+                        "frequency": "1d",
+                    },
+                },
                 "holdout_start": HOLD_OUT,
             },
         ],
