@@ -212,4 +212,55 @@ def test_metric_keys_csv_rows_and_row_counts(tmp_path):
     (tmp_path / "base_d1.csv").write_text("a,b\n1,2\n3,4\n\n")
     counts = GE.collect_metrics({"metrics": {"kind": "row_counts", "files": [{"path": "base_d1.csv", "split": "d1"}]}}, tmp_path)
     assert counts == [{"metric": "rows", "split": "d1", "horizon": None, "unit": "rows", "value": 2.0,
+                       "std_dev": None, "min_value": None, "max_value": None},
+                      {"metric": "columns", "split": "d1", "horizon": None, "unit": "columns", "value": 2.0,
                        "std_dev": None, "min_value": None, "max_value": None}]
+
+
+def test_outbox_failure_classes_status_dispose_and_supersede(tmp_path):
+    """N4 for the generic consumer: same rules as the predictor outbox."""
+    from app.outbox import TerminalOutbox, classify_failure
+
+    assert classify_failure("terminal refused: http 503 down") == "TRANSIENT"
+    assert classify_failure("terminal refused: http 401 x") == "CONFIGURATION"
+    assert classify_failure("terminal refused: http 400 invalid metric") == "REFUSED_BY_SERVER"
+    assert classify_failure("terminal accounting and terminal lake diverge") == "UNRESOLVED"
+    outbox = TerminalOutbox(tmp_path / "outbox")
+
+    def terminal(status="COMPLETED", metric="MAE (x)"):
+        return {"schema": "governed_terminal.v1", "generation": 1, "status": status,
+                "reason": None if status == "COMPLETED" else "X", "started_at": "2026-09-14T00:00:00Z",
+                "finished_at": "2026-09-14T00:00:01Z", "costs": {"wall_seconds": 1.0}, "deliveries": ["a" * 32],
+                "artifacts": [], "metrics": [{"metric": metric, "split": None, "horizon": None, "unit": None,
+                                              "value": 1.0, "std_dev": None, "min_value": None, "max_value": None}],
+                "tags": {}}
+
+    bad = outbox.put({"campaign_sha256": "c" * 64, "unit_id": "u1", "terminal": terminal(status="FAILED")})
+    raw = bad.path.read_bytes()
+
+    def refuse(payload):
+        raise RuntimeError("terminal refused: http 400 invalid metric")
+    outbox.flush(refuse)
+    health = outbox.status()
+    assert health["pending"][0]["class"] == "REFUSED_BY_SERVER" and health["awaiting_adjudication"] == 1
+    with pytest.raises(ValueError, match="keeps the original outcome"):
+        outbox.supersede(bad.path.name, terminal(status="COMPLETED", metric="MAE_x"), lambda p: {"terminal_sha256": "9" * 64}, "r")
+    sent = []
+    record = outbox.supersede(bad.path.name, terminal(status="FAILED", metric="MAE_x"),
+                              lambda p: sent.append(p) or {"terminal_sha256": "9" * 64}, "key canonicalised")
+    assert record["decision"] == "SUPERSEDED" and record["successor_generation"] == 2 and sent[0]["terminal"]["generation"] == 2
+    assert (tmp_path / "outbox" / "adjudicated" / bad.path.name).read_bytes() == raw and not bad.path.exists()
+    other = outbox.put({"campaign_sha256": "c" * 64, "unit_id": "u2", "terminal": terminal()})
+    outbox.flush(refuse)
+    with pytest.raises(ValueError, match="states its reason"):
+        outbox.dispose(other.path.name, "INVALID_ENVELOPE", "")
+    outbox.dispose(other.path.name, "INVALID_ENVELOPE", "manufactured probe")
+    health = outbox.status()
+    assert health["pending"] == [] and sorted(a["decision"] for a in health["adjudicated"]) == ["INVALID_ENVELOPE", "SUPERSEDED"]
+    assert health["sent"] == 1
+
+
+def test_row_counts_report_columns_too(tmp_path):
+    (tmp_path / "out.csv").write_text("DATE_TIME,a,b\n1,2,3\n4,5,6\n")
+    rows = GE.collect_metrics({"metrics": {"kind": "row_counts", "files": [{"path": "out.csv", "split": "output"}]}}, tmp_path)
+    assert [(r["metric"], r["value"], r["unit"]) for r in rows] == [("rows", 2.0, "rows"), ("columns", 3.0, "columns")]

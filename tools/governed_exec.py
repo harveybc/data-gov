@@ -324,9 +324,21 @@ def collect_metrics(spec, out_dir: Path) -> list:
             path = out_dir / Path(item["path"]).name
             if not path.is_file():
                 raise GovernedExecError(f"metrics file missing: {path}")
+            header = None
             with open(path, "rb") as handle:
-                count = sum(1 for line in handle if line.strip()) - (1 if item.get("header", True) else 0)
-            rows.append(_metric("rows", float(max(count, 0)), split=item.get("split") or Path(path).stem, unit="rows"))
+                count = 0
+                for line in handle:
+                    if not line.strip():
+                        continue
+                    if header is None:
+                        header = line
+                    count += 1
+            count -= 1 if item.get("header", True) else 0
+            split = item.get("split") or Path(path).stem
+            rows.append(_metric("rows", float(max(count, 0)), split=split, unit="rows"))
+            if item.get("header", True) and header is not None:
+                rows.append(_metric("columns", float(len(header.decode("utf-8", "replace").rstrip("\r\n").split(","))),
+                                    split=split, unit="columns"))
         return rows
     raise GovernedExecError("unknown metrics kind")
 
@@ -338,7 +350,14 @@ def collect_artifacts(spec, out_dir: Path, outputs: dict) -> list:
         if not KEY_RE.match(role):
             raise GovernedExecError(f"invalid artifact role {role}")
         path = Path(outputs[target]) if target in outputs else out_dir / Path(str(target)).name
-        candidates = [path] if not target.endswith("_prefix") else sorted(out_dir.glob(path.name + "*"))
+        if target in outputs and target.endswith("_prefix"):
+            candidates = sorted(out_dir.glob(path.name + "*"))
+        elif target not in outputs and any(ch in str(target) for ch in "*?["):
+            # a glob over the output directory: every file the command produced under that pattern
+            candidates = sorted(p for p in out_dir.glob(str(target)) if p.is_file()
+                                and p.name not in ("governed_config.json", "GOVERNED_RUN.json", "run.log"))
+        else:
+            candidates = [path]
         for index, candidate in enumerate(candidates):
             if not candidate.is_file():
                 continue
@@ -646,18 +665,52 @@ def consumer_main(profile: dict, argv=None, *, repo_root) -> int:
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--spec", required=True)
+    parser.add_argument("--spec")
     parser.add_argument("--gov-url", default="http://127.0.0.1:5055")
     parser.add_argument("--api-key-file")
-    parser.add_argument("--out-dir", required=True)
+    parser.add_argument("--out-dir")
     parser.add_argument("--cache-dir", default=DEFAULT_CACHE)
     parser.add_argument("--outbox-dir", default=DEFAULT_OUTBOX)
+    parser.add_argument("--status", action="store_true", help="outbox health as JSON")
+    parser.add_argument("--flush", action="store_true", help="retry every pending envelope once")
+    parser.add_argument("--dispose", metavar="FILE", help="close a pending envelope as INVALID_ENVELOPE")
+    parser.add_argument("--supersede", metavar="FILE", help="send --terminal as the next generation, then dispose FILE")
+    parser.add_argument("--terminal", metavar="T.json")
+    parser.add_argument("--reason")
     args = parser.parse_args(argv)
     try:
+        outbox = TerminalOutbox(Path(os.path.expanduser(args.outbox_dir)))
+        if args.status:
+            print(json.dumps(outbox.status(), indent=2, sort_keys=True))
+            return 0
+        if args.dispose:
+            print(json.dumps(outbox.dispose(args.dispose, "INVALID_ENVELOPE", args.reason or ""), sort_keys=True))
+            return 0
+        if args.flush or args.supersede:
+            client = DataGovClient(args.gov_url, load_api_key(args.api_key_file), "terminal-outbox")
+            if args.supersede:
+                if not args.terminal:
+                    raise GovernedExecError("--supersede needs --terminal")
+                with open(Path(args.terminal).expanduser(), encoding="utf-8") as handle:
+                    corrected = json.load(handle)
+
+                def sender(envelope):
+                    status, receipt = client.report_terminal(envelope["campaign_sha256"], envelope["unit_id"], envelope["terminal"])
+                    if status not in (200, 201):
+                        raise GovernedExecError(f"terminal refused: http {status} {receipt.get('error', '')}".strip())
+                    _reconcile(client, envelope["campaign_sha256"], envelope["unit_id"], before_run=False)
+                    return receipt
+                print(json.dumps(outbox.supersede(args.supersede, corrected, sender, args.reason or ""), sort_keys=True))
+                return 0
+            result = send_pending(client, outbox)
+            print(json.dumps(result, sort_keys=True))
+            return 0 if result["pending"] == 0 else 1
+        if not args.spec or not args.out_dir:
+            raise GovernedExecError("--spec and --out-dir are required to run")
         spec = load_spec(args.spec)
         client = DataGovClient(args.gov_url, load_api_key(args.api_key_file), spec["campaign_key"])
         state = run(spec, client, args.out_dir, args.cache_dir, args.outbox_dir)
-    except GovernedExecError as exc:
+    except (GovernedExecError, ValueError, RuntimeError, OSError) as exc:
         print(f"governed_exec: {exc}", file=sys.stderr)
         return 1
     print(f"governed_exec: {state['campaign_key']} status={state['status']} "
