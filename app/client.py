@@ -11,7 +11,7 @@ import uuid
 from pathlib import Path
 from urllib.parse import urlencode
 
-from app.httpstream import (
+from .httpstream import (  # relative: the package may be loaded under another name by consumers
     CHUNK,
     BufferedResponse,
     filename_from_disposition,

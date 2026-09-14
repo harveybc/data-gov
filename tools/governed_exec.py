@@ -38,11 +38,28 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve()
 DATA_GOV = HERE.parents[1]
-if str(DATA_GOV) not in sys.path:
-    sys.path.insert(0, str(DATA_GOV))
 
-from app.client import DataGovClient  # noqa: E402
-from app.outbox import TerminalOutbox  # noqa: E402
+
+def _data_gov_app():
+    """data-gov's `app` package under a private name: every consumer repository has
+    its own top-level `app`, so the plain name must never be imported here."""
+    import importlib
+    import importlib.util
+
+    name = "data_gov_app"
+    if name not in sys.modules:
+        package = DATA_GOV / "app"
+        spec = importlib.util.spec_from_file_location(
+            name, package / "__init__.py", submodule_search_locations=[str(package)])
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[name] = module
+        spec.loader.exec_module(module)
+    return importlib.import_module(f"{name}.client"), importlib.import_module(f"{name}.outbox")
+
+
+_client_module, _outbox_module = _data_gov_app()
+DataGovClient = _client_module.DataGovClient
+TerminalOutbox = _outbox_module.TerminalOutbox
 
 SPEC_SCHEMA = "governed_exec_spec.v1"
 DEFAULT_CACHE = "~/.cache/data-gov"
