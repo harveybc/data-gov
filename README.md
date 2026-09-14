@@ -4,7 +4,7 @@
 datasets, apply access policies, deliver identifiable data, and record each
 experiment's inputs and outcome in a configured analytical warehouse.
 
-data-gov answers: **who used which bytes, for which experiment, when, and
+data-gov answers: **who used, what data, for which experiment, when, and
 where were the results recorded?** It does not train models, clean signals,
 host the source datasets or replace the database that stores experiment results.
 
