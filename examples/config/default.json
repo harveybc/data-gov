@@ -111,7 +111,30 @@
         "**/*.csv"
       ],
       "time_column": "DATE_TIME",
-      "holdout_start": "2025-01-01"
+      "holdout_start": "2025-01-01",
+      "resource_contracts": {
+        "phase_1/normalized_d4.csv": {
+          "event_time_column": "DATE_TIME",
+          "available_time_column": "DATE_TIME",
+          "timezone": "NAIVE_WALL_CLOCK",
+          "time_unit": null,
+          "frequency": "4h"
+        },
+        "phase_1/normalized_d5.csv": {
+          "event_time_column": "DATE_TIME",
+          "available_time_column": "DATE_TIME",
+          "timezone": "NAIVE_WALL_CLOCK",
+          "time_unit": null,
+          "frequency": "4h"
+        },
+        "phase_1/normalized_d6.csv": {
+          "event_time_column": "DATE_TIME",
+          "available_time_column": "DATE_TIME",
+          "timezone": "NAIVE_WALL_CLOCK",
+          "time_unit": null,
+          "frequency": "4h"
+        }
+      }
     }
   ]
 }
