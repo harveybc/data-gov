@@ -1,4 +1,4 @@
-"""SQLite lake. `query` is SELECT only with holdout on result timestamps; `write_metrics` is
+"""SQLite warehouse. `query` is SELECT only with holdout on result timestamps; `write_metrics` is
 append-only on the gov_* tables (04_FLOW_V2 §3). The two never share a code path."""
 
 from __future__ import annotations
@@ -11,6 +11,7 @@ from datetime import date, datetime, timezone
 from pathlib import Path
 
 from app.report import canonical_body, canonical_json, report_sha256
+from app.store_metadata import store_metadata
 
 
 _SELECT = re.compile(r"^\s*select\b", re.I)
@@ -159,8 +160,8 @@ class Plugin:
     plugin_params = {
         "lake_id": "olap_lab",
         "title": "OLAP lab",
-        "description": "SQL lake",
-        "kind": "sql_olap",
+        "description": "SQL warehouse",
+        "kind": "warehouse",
         "sqlite_path": None,
         "time_column": "ts",
         "holdout_start": None,
@@ -170,6 +171,7 @@ class Plugin:
         self.params = dict(self.plugin_params)
 
     def set_params(self, **kwargs):
+        store_metadata(dict(self.params, **kwargs), adapter_kind="warehouse", adapter_engine="sql_olap")
         self.params.update(kwargs)
         if self.params.get("sqlite_path"):
             self._ensure_schema()
@@ -471,6 +473,6 @@ class Plugin:
             "lake_id": self.params.get("lake_id"),
             "title": self.params.get("title"),
             "description": self.params.get("description"),
-            "kind": self.params.get("kind"),
+            **store_metadata(self.params, adapter_kind="warehouse", adapter_engine="sql_olap"),
             "root_path": str(Path(self.params.get("sqlite_path") or ".").resolve()),
         }

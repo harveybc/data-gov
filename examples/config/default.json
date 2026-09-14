@@ -84,7 +84,8 @@
       "lake_id": "financial_files",
       "title": "financial-data",
       "description": "File lake at :5056. Inventory is the data roots (stat only).",
-      "kind": "http",
+      "kind": "lake",
+      "engine": "files_inventory",
       "base_url": "http://127.0.0.1:5056",
       "holdout_start": "2025-01-01"
     },
@@ -93,7 +94,8 @@
       "lake_id": "olap_cube",
       "title": "predictor OLAP cube",
       "description": "Cube at :5057 (PG*): SELECT-only query, append-only gov_* via write_metrics. Never reset_olap.",
-      "kind": "http",
+      "kind": "warehouse",
+      "engine": "sql_olap",
       "base_url": "http://127.0.0.1:5057",
       "holdout_start": "2025-01-01"
     },
@@ -102,7 +104,8 @@
       "lake_id": "predictor_examples",
       "title": "predictor examples",
       "description": "In-process file lake over the predictor sample data (downsampled CSVs). Governed downloads for the lab path.",
-      "kind": "files_inventory",
+      "kind": "lake",
+      "engine": "files_inventory",
       "root_path": "../predictor/examples/data_downsampled",
       "include_globs": [
         "**/*.csv"

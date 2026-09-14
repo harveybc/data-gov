@@ -4,18 +4,19 @@
 <script src="{{ url_for('static', filename='js/chart.umd.min.js') }}"></script>
 {% endblock %}
 {% block content %}
-<p><a href="{{ url_for('dashboard') }}">&larr; lakes</a></p>
+<p><a href="{{ url_for('dashboard') }}">&larr; stores</a></p>
 <div class="row">
   <div class="col-md-4">
     <div class="card card-dark">
       <div class="card-header"><h3 class="card-title">{{ meta.title }}</h3></div>
       <div class="card-body">
         <p>{{ meta.description }}</p>
-        <p class="mb-1"><span class="badge badge-info">{{ meta.kind }}</span> <code>{{ meta.lake_id }}</code></p>
+        <p class="mb-1"><span class="badge badge-info">{{ meta.kind or 'Unclassified' }}</span> <code>{{ meta.lake_id }}</code></p>
+        {% if meta.engine %}<p class="small mb-1">Engine <code>{{ meta.engine }}</code> · {{ meta.transport }}</p>{% endif %}
         <p class="small text-muted">Root <code>{{ meta.root_path }}</code></p>
         <hr>
         <p>Host free <strong>{{ fmt_bytes(storage.host_free) }}</strong> of {{ fmt_bytes(storage.host_total) }}</p>
-        <p class="mb-0">Bytes in this lake <strong>{{ fmt_bytes(storage.lake_bytes) }}</strong></p>
+        <p class="mb-0">Bytes in this store <strong>{{ fmt_bytes(storage.lake_bytes) }}</strong></p>
       </div>
     </div>
     <div class="card card-dark">
