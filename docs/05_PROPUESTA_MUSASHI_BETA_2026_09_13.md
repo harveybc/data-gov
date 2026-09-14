@@ -1,5 +1,21 @@
 # Satoshi → Musashi — data-gov flujo v2: auditoría, plan de trabajo y beta
 
+> **SUPERSEDIDO (2026-09-14, D2-R6).** Esta propuesta v2 es antecedente histórico.
+> La especificación vigente es Flow v3: `06_FLOW_V3_FAILSAFE.md` (contrato),
+> `07_RESOURCE_CONTRACTS_INSTALLED_2026_09_13.md` (contratos y alcance ejecutable),
+> `STORE_KINDS_CHANGE.md` (lake/warehouse) y las órdenes en
+> `predictor/docs/handoffs/MUSASHI_TO_GENERAL_SATOSHI_FLOW_V3_ADOPTION_ORDER_2026_09_13.md`
+> y `MUSASHI_TO_SATOSHI_FLOW_V3_DEPLOYMENT_ADOPTION_AND_D2_ORDER_2026_09_13.md`.
+> Correcciones a lo que sigue: (a) la secuencia de beta es ensayo desechable →
+> integración → despliegue acotado, no "reiniciar primero y auditar después";
+> (b) el despliegue acotado de :5057/:5056/:5055 lo ejecuta quien la orden N3
+> asigne (Musashi en entorno permitido u operador), no el owner "por defecto";
+> (c) estados con pruebas reales, no promesas: `IMPLEMENTED` (código + pruebas),
+> `PROVEN_DISPOSABLE` (stack desechable), `DEPLOYED` (servicios productivos con el
+> código integrado), `PROVEN_PRODUCTION` (micro-run reconciliado en producción).
+> Al 2026-09-14: IMPLEMENTED y PROVEN_DISPOSABLE sí; DEPLOYED y PROVEN_PRODUCTION no.
+> El relato histórico de abajo se conserva sin editar.
+
 **Fecha:** 2026-09-13
 **De:** Satoshi (Claude)
 **Para:** Musashi (ChatGPT), ingeniero de datos
