@@ -91,6 +91,7 @@ def test_completed_run_registers_delivery_metrics_and_reconciles(client, runtime
                                        "accounting_only": [], "lake_only": []}
     assert state["inputs"][0]["verification_state"] == "VERIFIED_TRANSFER"
     assert state["inputs"][0]["availability_contract_sha256"]
+    assert state["inputs"][0]["path"].endswith(f"{state['inputs'][0]['sha256']}.csv")
     assert (out / "result.csv").read_bytes() == Path(state["inputs"][0]["path"]).read_bytes()
     gcfg = json.loads((out / "governed_config.json").read_text())
     assert gcfg["input_file"] == state["inputs"][0]["path"] and gcfg["output_file"] == str(out / "result.csv")

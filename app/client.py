@@ -196,12 +196,13 @@ class DataGovClient:
             finally:
                 response.close()
 
-    def _save(self, response, dest: Path, *, governing=False):
+    def _save(self, response, dest: Path, *, governing=False, default_ext=""):
         expected = (response.header("X-Content-SHA256") or "").lower()
         if not re.fullmatch(r"[0-9a-f]{64}", expected):
             return 502, {"error": "missing content digest"}
         filename = filename_from_disposition(response.header("Content-Disposition"))
-        ext = Path(filename).suffix if filename else ""
+        # governed deliveries carry no disposition: the cache entry keeps the resource's suffix
+        ext = Path(filename).suffix if filename else default_ext
         source_sha256 = (response.header("X-Source-SHA256") or "").lower()
         contract_sha256 = (
             response.header("X-Availability-Contract-SHA256") or ""
@@ -328,7 +329,9 @@ class DataGovClient:
                     r"[0-9a-f]{32}", delivery_id
                 ):
                     return 502, {"error": "missing delivery identity"}
-                status, info = self._save(response, dest, governing=True)
+                status, info = self._save(
+                    response, dest, governing=True, default_ext=Path(resource).suffix,
+                )
             finally:
                 response.close()
             if status != 200:
