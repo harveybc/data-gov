@@ -12,7 +12,7 @@ from urllib.error import HTTPError, URLError
 
 from app.httpstream import BufferedResponse, filename_from_disposition, open_stream
 from app.store_metadata import store_metadata
-from lake_plugins.errors import UnsupportedError
+from lake_plugins.errors import LakeUnreachable, UnsupportedError
 
 
 class Plugin:
@@ -90,7 +90,7 @@ class Plugin:
         try:
             return open_stream(url, headers=headers, params=params, method=method, body=body)
         except OSError as exc:
-            raise RuntimeError(f"lake unreachable: {exc}") from exc
+            raise LakeUnreachable(f"lake unreachable: {exc}") from exc
 
     def _raise_http(self, status, body):
         err = (body or {}).get("error") or f"http {status}"

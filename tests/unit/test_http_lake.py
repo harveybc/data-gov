@@ -158,3 +158,20 @@ def test_write_metrics_forwards_report(tmp_path):
     lake = _lake(tmp_path)
     out = lake.write_metrics({"lineage": "VERIFIED", "metrics": []})
     assert out == {"stored": True, "already_stored": False, "lineage": "VERIFIED"}
+
+
+def test_unreachable_remote_is_a_transport_error_not_a_conflict():
+    """A dead remote raises LakeUnreachable (a RuntimeError for old callers); the
+    terminal route maps it to 503 so a client classifies it as transient."""
+    import socket
+
+    from lake_plugins.errors import LakeUnreachable
+
+    with socket.socket() as sock:
+        sock.bind(("127.0.0.1", 0))
+        port = sock.getsockname()[1]
+    lake = Plugin()
+    lake.set_params(lake_id="dead", base_url=f"http://127.0.0.1:{port}", lake_service_token="t")
+    with pytest.raises(LakeUnreachable, match="lake unreachable"):
+        lake.write_terminal({"schema": "governed_terminal.v1"})
+    assert issubclass(LakeUnreachable, RuntimeError)

@@ -32,7 +32,7 @@ from app.governance import (
     normalise_confirmation,
     normalise_terminal,
 )
-from lake_plugins.errors import UnsupportedError
+from lake_plugins.errors import LakeUnreachable, UnsupportedError
 
 CHUNK = 1024 * 1024
 MAX_BODY = 16 * 1024 * 1024
@@ -889,6 +889,9 @@ class Plugin:
                 )
             except ValueError as exc:
                 return json_error(400, str(exc))
+            except LakeUnreachable as exc:
+                # transport failure, never a conflict: clients keep the envelope and retry
+                return json_error(503, f"terminal lake unreachable: {exc}")
             except RuntimeError as exc:
                 return json_error(409, str(exc))
             except Exception as exc:

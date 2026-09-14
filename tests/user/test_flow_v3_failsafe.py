@@ -294,3 +294,31 @@ def test_official_client_executes_the_complete_governed_protocol(client, tmp_pat
     status, reconciliation = gov.reconcile_campaign(campaign)
     assert status == 200
     assert reconciliation["missing_units"] == ["u002"]
+
+
+def test_unreachable_terminal_lake_answers_503_not_409(client, runtime, monkeypatch):
+    """A transport failure towards the terminal lake is transient for the client
+    (503 + retry), never a generation conflict (409)."""
+    from lake_plugins.errors import LakeUnreachable
+
+    campaign = _submit(client)
+    download = _download(client, campaign)
+    assert download.status_code == 200
+    delivery_id = download.headers["X-Delivery-ID"]
+    digest = hashlib.sha256(download.data).hexdigest()
+    confirm = client.post(f"/api/v2/deliveries/{delivery_id}/confirm", json={
+        "schema": "delivery_confirmation.v1", "sha256": digest, "bytes": len(download.data), "cached": False,
+    }, headers=_headers(campaign))
+    assert confirm.status_code == 200
+    lake = runtime["plugins"]["lakes"]["olap_strict"]
+    monkeypatch.setattr(lake, "write_terminal", lambda terminal: (_ for _ in ()).throw(LakeUnreachable("lake unreachable: refused")))
+    terminal = {
+        "schema": "governed_terminal.v1", "generation": 1, "status": "COMPLETED", "reason": None,
+        "started_at": "2026-09-14T00:00:00Z", "finished_at": "2026-09-14T00:00:01Z",
+        "costs": {"wall_seconds": 1.0}, "deliveries": [delivery_id], "artifacts": [], "metrics": [], "tags": {},
+    }
+    response = client.post(f"/api/v2/campaigns/{campaign}/units/u001/terminal", json=terminal,
+                           headers=_headers(campaign, "u001"))
+    assert response.status_code == 503 and "unreachable" in response.get_json()["error"]
+    reconcile = client.get(f"/api/v2/campaigns/{campaign}/reconcile", headers=_headers(campaign))
+    assert reconcile.get_json()["missing_units"] == ["u001", "u002"]
