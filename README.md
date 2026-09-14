@@ -1,210 +1,148 @@
 # data-gov
 
-**Data governance** for multiple data lakes: inventory, automatic policy,
-append-only accounting, and event-driven roles. Experiments download
-through this kernel (hash, experiment id, holdout). They do not wait
-for a human ticket.
+**Data governance for lakes and warehouses.** One kernel provides inventory,
+automatic policy, data lineage, usage accounting and result reconciliation.
+Experiments work locally after receiving their data; no person approves each
+download, and governance calls do not run inside the learning loop.
 
-| Doc | What |
-|---|---|
-| [docs/00_CONTRATO.md](docs/00_CONTRATO.md) | Product contract |
-| [docs/01_WORKPLAN.md](docs/01_WORKPLAN.md) | Phases G0–G7 |
-| [docs/02_DESIGN.md](docs/02_DESIGN.md) | Plugin types and HTTP API |
-| [docs/03_LAKE_ADAPTER.md](docs/03_LAKE_ADAPTER.md) | Connecting a lake (adapter + config) |
-| [docs/04_FLOW_V2.md](docs/04_FLOW_V2.md) | Download, report metrics, lineage |
+## Lakes and warehouses
 
-## Requirements
+| Store kind | Data model | Example | Operations |
+|---|---|---|---|
+| `lake` | Schema-on-read: files in native form, interpreted by consumers | financial-data, CSV/Parquet | Inventory, coverage, download, read |
+| `warehouse` | Schema-on-write: structured tables with defined schemas, facts and dimensions | PostgreSQL OLAP cube | Inventory, SELECT queries, append-only reporting |
 
-- Python **3.10+** (exercised on 3.12).
-- `pip` packages in `requirements.txt`: Flask, pandas, pyarrow, pytest.
-- A checkout of this repo. Optional sibling `../financial-data` for the real file lake.
-- Nothing on the GPU. Do not stop Postgres/Metabase/training jobs you did not start.
-- Port **5055** free on localhost.
+A lake can be local; cloud hosting is not a requirement. A Parquet file may
+have a schema without being a warehouse. The distinction describes how a
+store is organized and consumed, not its price, quality or physical location.
+The OLAP cube is a **warehouse**, not another lake or a new lakehouse product.
 
-No Docker. No Keycloak in this phase. No S3.
+Both kinds use the same policy and accounting engine. `kind` does not grant
+operations: policies still decide them. `deny_from` remains applicable to both
+through their existing temporal rules. A warehouse need not implement file
+downloads; a lake need not implement SQL queries.
 
-## Install
+Three metadata fields distinguish the concepts:
+
+- `kind`: `lake` or `warehouse`.
+- `engine`: implementation, such as `files_inventory` or `sql_olap`.
+- `transport`: `http` or `local` for built-in adapters.
+
+The existing `datagov.lake` plugin group, `lakes[]` configuration, `lake_id`
+identifiers and `/api/v1/lakes` route remain unchanged for compatibility.
+They collectively refer to governed **stores**. No repository split or
+plugin-group migration is required.
+
+## Experiment flow
+
+[Flow v3](docs/06_FLOW_V3_FAILSAFE.md) is the implemented contract for new
+governing experiments:
+
+1. Register a campaign with units, effective configuration, code identity,
+   requested inputs and result destination.
+2. Download each declared input, verify its hash and confirm receipt. Reused
+   cache entries are rehashed and recorded as cache uses.
+3. Run locally. Source hash, delivered hash, role, range and temporal contract
+   stay attached to the experiment.
+4. Persist a terminal for every outcome, including failure, refusal and
+   inconclusive results. A durable outbox retains reports during an outage.
+5. Report through data-gov to the configured warehouse and reconcile the
+   campaign, accounting log and stored terminals.
+
+A matching hash identifies bytes; it does not prove causal validity or
+scientific usefulness. Keep source artifacts, generator specifications,
+partitions and software identities for reproduction. Temporal resources need
+explicit availability contracts. Small mechanics-only tests may be marked
+`NON_GOVERNING`; they cannot promote a scientific result.
+
+The client is `app.client.DataGovClient`. Predictor's integration is documented
+in [GOVERNED_RUN.md](https://github.com/harveybc/predictor/blob/musashi/data-gov-consumer-v3-20260913/docs/GOVERNED_RUN.md).
+The older [Flow v2 API](docs/04_FLOW_V2.md) remains documented for compatibility;
+its experiment-key-only reporting is not the new governing path.
+
+## Install and test
+
+Python 3.10+ (exercised on 3.12). Dependencies are in `requirements.txt`.
 
 ```bash
 git clone https://github.com/harveybc/data-gov.git
 cd data-gov
 python3 -m venv .venv
-source .venv/bin/activate          # Windows: .venv\Scripts\activate
+source .venv/bin/activate
 pip install -r requirements.txt
 pip install -e .
-python3 scripts/issue_credentials.py   # writes var/credentials.json (gitignored)
-python3 scripts/seed_olap.py           # lab sqlite cube
+python3 scripts/issue_credentials.py
 python3 -m pytest tests -q
 ```
 
-`setup.py` `install_requires` is the runtime set; `requirements.txt` is what we actually install.
-
-If `var/credentials.json` already exists, `issue_credentials.py` will not overwrite it.
+`issue_credentials.py` does not overwrite an existing credentials file.
+Credentials belong in local configuration, never in Git. The optional
+`scripts/seed_olap.py` creates a SQLite demonstration cube, not production
+experiment evidence.
 
 ## Run
 
-**Three processes**, all left running (lakes first):
+Start configured stores before the governance kernel, each in its own shell
+and environment. If the services already run, use the reviewed deployment
+procedure instead of starting duplicates or restarting experiments.
 
-```bash
-# 1) file lake
-cd ../financial-data/lake && pip install -e . && sh scripts/serve.sh
-# http://127.0.0.1:5056  inventory of parquet/csv (stat only)
-
-# 2) OLAP cube (read-only, PG*)
-cd ../predictor/olap/lake && pip install -e . && sh scripts/serve.sh
-# http://127.0.0.1:5057  tables in predictor_olap
-
-# 3) governance kernel
-cd data-gov
-PYTHONPATH=. python3 -m app.main --load_config examples/config/default.json
-# same: sh scripts/serve.sh  → http://127.0.0.1:5055/login
-```
-
-Then open **http://127.0.0.1:5055/login** (not `/var/credentials.json` — that path is a **disk file**, not a web page).
-
-Person login:
-
-```bash
-cat var/credentials.json
-```
-
-Use username `harvey` (or `musashi`) and the password under `people.<name>`.
-CSS is served from `/static/` in this repo (no CDN).
-
-Stop: Ctrl+C.
-
-### Service clients (predictor, DOIN, heuristic-strategy)
-
-API keys are in the same file under `services.<name>`. Every `download` / `read` /
-`query` needs:
-
-```
-Authorization: Bearer <api_key>
-X-Experiment-Key: <experiment or experiment-set key>   # ^[A-Za-z0-9._:-]{1,128}$
-```
-
-The governed path is **download a file, use it, report the metrics** (contract:
-[docs/04_FLOW_V2.md](docs/04_FLOW_V2.md)). The API key can also come from
-`DATA_GOV_API_KEY` or `api_key_file=`; never from git.
-
-```python
-from app.client import DataGovClient
-
-gov = DataGovClient(
-    "http://127.0.0.1:5055",
-    api_key="<services.predictor>",          # or DATA_GOV_API_KEY
-    experiment_key="ann_1575_1d",
-)
-
-# 1. the dataset as a file: sha256 verified on arrival, cached as <dest>/<sha256>.csv
-status, info = gov.download(
-    "predictor_examples", "phase_1/normalized_d4.csv", "var/cache/predictor_examples",
-)
-# info: path, sha256, source_sha256, delivery (AS_IS | CUT), time_column, bytes, cached
-# a range cuts on the column's own wall clock; the holdout is never served:
-# gov.download(lake, resource, dest, start="2020-01-01", end="2020-01-31")
-
-# 2. train with info["path"] ...
-
-# 3. report: data-gov checks those bytes were served under this key, then writes the
-#    report into the named lake (the cube is just another lake)
-status, receipt = gov.report_metrics(
-    "ann_1575_1d",
-    "olap_cube",
-    metrics=[{"metric": "MAE", "value": 0.0065, "split": "train", "horizon": 24}],
-    datasets=[{"lake": "predictor_examples", "resource": "phase_1/normalized_d4.csv",
-               "sha256": info["sha256"], "role": "x_train_file"}],
-    config_sha256="…", code_commit="…", project="predictor", phase="phase_1_daily",
-)
-# 201 stored / 200 already stored; receipt["lineage"] is VERIFIED or UNVERIFIED and
-# each dataset carries its reason and the accounting event_id that served it.
-
-gov.usage("ann_1575_1d")            # every accounting row of that key
-gov.dataset_usage(info["sha256"])   # every allow download of exactly those bytes
-```
-
-`read` (JSON rows, small slices) and `query` (SELECT only) stay as before.
-
-Holdout: timestamps on or after **2025-01-01** are denied and logged; a file that
-spans the holdout can only be downloaded with a `from`/`to` range (calendar days).
-No experiment header → 403 and a deny row. A lake whose policy has
-`require_lineage: true` answers 422 to a report whose datasets were not served under
-that key; the lab lake stores it with `lineage=UNVERIFIED` and a warning.
-
-## Use it with an agent
-
-Open **this** repository in Claude, Cursor, Codex, Copilot, Grok, … and paste:
-
-> Read `AGENTS.md` and follow the **Agent quickstart**. Create a venv,
-> `pip install -r requirements.txt && pip install -e .`, run
-> `python3 scripts/issue_credentials.py` if `var/credentials.json` is
-> missing, `python3 scripts/seed_olap.py`, `python3 -m pytest tests -q`.
-> Start the UI with `sh scripts/serve.sh` and leave it running. Tell me
-> http://127.0.0.1:5055/login , that credentials are the **file**
-> `var/credentials.json` (not a URL), and do not print the passwords in
-> git. Do not stop GPU/Postgres/Metabase. Do not add S3/Gravitino.
-
-Connecting another lake: [docs/03_LAKE_ADAPTER.md](docs/03_LAKE_ADAPTER.md).
-
-## Lakes in this checkout
-
-Clients talk to **data-gov**, not to the lake disk. A lake is a plugin
-(`datagov.lake`) plus a `lakes[]` block and policies. Unknown
-`resource_id` → deny.
-
-Shipped examples:
-
-| `lake_id` | Plugin | What |
+| Component | Command from the indicated repository directory | Default address |
 |---|---|---|
-| `financial_files` | `http_lake` → :5056 | `financial-data/lake` — parquet/csv under data roots + features |
-| `olap_cube` | `http_lake` → :5057 | `predictor/olap/lake` — live `predictor_olap`, SELECT-only `query`, append-only `gov_*` via `write_metrics` |
-| `predictor_examples` | `files_lake` (in-process) | `../predictor/examples/data_downsampled`, `DATE_TIME` column, holdout 2025-01-01 |
+| Financial lake | In `financial-data/lake`: `sh scripts/serve.sh` | `http://127.0.0.1:5056` |
+| OLAP warehouse adapter | In `predictor/olap/lake`: `sh scripts/serve.sh` | `http://127.0.0.1:5057` |
+| Governance kernel | In `data-gov`: `sh scripts/serve.sh` | `http://127.0.0.1:5055/login` |
 
-## Plugins (setuptools, same as predictor)
+The warehouse uses configured PostgreSQL access. `query` is SELECT-only;
+result writes use the reporting adapter and additive `gov_*` tables.
+Experiments do not receive database write credentials. Do not run
+`reset_olap` against the populated cube.
 
-Six types. AuthN+AuthZ are one plugin. Inventory is `lake.discover()`. Roles are one dispatcher.
+Login credentials are in the local disk file `var/credentials.json`, not a web
+URL. Service clients use their configured API key. `/healthz` checks service
+health; it does **not** certify end-to-end experiment adoption.
 
-| Group | Job | Names |
-|---|---|---|
-| `datagov.pipeline` | Orchestrate | `default_pipeline` |
-| `datagov.web` | AdminLTE UI + HTTP API | `default_web` |
-| `datagov.access` | People, API keys, policies | `default_access` |
-| `datagov.accounting` | Append-only log | `default_accounting` |
-| `datagov.lake` | Adapters | `files_lake`, `sql_lake` |
-| `datagov.role` | Events (no Hermes until an event exists) | `default_role` |
+Before claiming deployment, pass the disposable three-service check
+`tools/verify_flow_v3_e2e.py`, then verify a governed micro-run through the
+actual deployed services. Implementation, deployment and experiment adoption
+are separate statuses; store labels alone do not complete that work.
 
-Config merge (later wins): `plugin_params` → `app/config.py` → `--load_config` JSON → long `--flags` only.
+## Configured stores
 
-## What you see in the UI
+| `lake_id` (stable identifier) | `kind` | `engine` | Adapter |
+|---|---|---|---|
+| `financial_files` | `lake` | `files_inventory` | `http_lake`, financial-data |
+| `olap_cube` | `warehouse` | `sql_olap` | `http_lake`, predictor OLAP |
+| `predictor_examples` | `lake` | `files_inventory` | Local `files_lake` |
 
-- Lakes the logged-in person is allowed to see
-- Host free space per lake, inventoried resources, operation counts
-- Last accounting warnings
-- Click a lake: description, inventory, usage log, stats by operation and by actor
+Set kind explicitly for HTTP stores so labels remain available when a remote
+service is offline. Legacy `files_inventory` and `sql_olap` kinds normalize on
+input. Legacy `http` alone is only a transport: a known remote description
+supplies the kind; otherwise the UI says **Unclassified** and `describe()`
+returns `kind: null`. That is missing metadata, not a third kind.
 
-## Layout
+The dashboard lists stores, kinds, engines, resources and accounting activity.
+Store details retain inventory and usage links for both kinds.
 
-```
-app/                   CLI, merge, plugin loader, DataGovClient, report.py (canonical report), httpstream.py
-access_plugins/
-accounting_plugins/
-lake_plugins/          files_lake, sql_lake, http_lake, errors.py
-pipeline_plugins/
-role_plugins/
-web_plugins/           templates + vendored AdminLTE under static/
-examples/config/       default.json (hashes only)
-examples/data/olap_lab/
-docs/
-scripts/serve.sh
-scripts/issue_credentials.py
-scripts/seed_olap.py
-tests/                 user / system / integration / unit
-var/                   gitignored: credentials.json, accounting.db, spool/ (swept at start),
-                       cuts/<source_sha256>/<from>_<to>.<ext> (materialised once), source_sha256.json
-```
+## Plugins and documents
 
-## What this repo is not
+| Plugin group | Responsibility |
+|---|---|
+| `datagov.pipeline` | Application orchestration |
+| `datagov.web` | UI and HTTP API |
+| `datagov.access` | Principals and automatic policies |
+| `datagov.accounting` | Usage and campaign records |
+| `datagov.lake` | Store adapters: `files_lake`, `sql_lake`, `http_lake` |
+| `datagov.role` | Event-driven roles, outside the read hot path |
 
-- Not `data-logger` (ESP32 / ThingsBoard telemetry). That may become a lake plugin later.
-- Not a human approval queue. Musashi/Satoshi are not on the read hot path.
-- Not a general write API to the campaign cube. `query` is SELECT only; the only write is `write_metrics`, append-only on the `gov_*` tables, and nothing here runs `reset_olap`.
+Configuration precedence: plugin defaults, application defaults, JSON config,
+then long-form CLI flags. Store kind and engine belong to each `lakes[]` entry,
+not another adapter's global defaults.
+
+- [Product contract](docs/00_CONTRATO.md)
+- [Work plan](docs/01_WORKPLAN.md)
+- [Connecting a store](docs/03_LAKE_ADAPTER.md)
+- [Flow v3 and reproducibility](docs/06_FLOW_V3_FAILSAFE.md)
+- [Classification change and test evidence](docs/STORE_KINDS_CHANGE.md)
+
+`data-logger` remains a different product. A future telemetry store can use an
+adapter here; it does not require another governance kernel.

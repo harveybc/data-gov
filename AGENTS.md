@@ -4,7 +4,7 @@ Guidance for AI coding agents. See [agents.md](https://agents.md).
 
 ## Project overview
 
-`data-gov` is the **data governance** system for multiple lakes: inventory,
+`data-gov` is the **data governance** system for lakes and warehouses: inventory,
 automatic policy, accounting, and event-driven Hermes roles.
 
 CEO (Harvey) and data engineer (Musashi) stay human. Other governance and
@@ -21,7 +21,10 @@ Holdout starts 2025-01-01 (financial-data catalog). Service calls without
 `data-logger` is a different product (sensor telemetry). Do not merge them.
 A telemetry site may become a **lake adapter** later.
 
-Lake adapters: `docs/03_LAKE_ADAPTER.md`.
+Store adapters: `docs/03_LAKE_ADAPTER.md`. `kind` is lake/warehouse, separate
+from engine and transport. Keep `datagov.lake`, `lakes[]`, identifiers and
+policies unchanged. Read `docs/06_FLOW_V3_FAILSAFE.md` for governing runs;
+the Flow v2 description below is legacy compatibility, not that current path.
 
 Flow v2 (`docs/04_FLOW_V2.md`, the contract): an agent downloads a dataset **as a
 file** (`GET /api/v1/download`, `DataGovClient.download`), data-gov records who, when,

@@ -11,6 +11,7 @@ import threading
 import uuid
 from pathlib import Path
 
+from app.store_metadata import store_metadata
 from lake_plugins.errors import UnsupportedError
 
 import pandas as _pd
@@ -70,7 +71,7 @@ class Plugin:
         "lake_id": "financial_files",
         "title": "Financial files",
         "description": "File lake",
-        "kind": "files_inventory",
+        "kind": "lake",
         "root_path": ".",
         "include_globs": ["**/*.csv", "**/*.parquet"],
         "time_column": None,
@@ -90,6 +91,7 @@ class Plugin:
         self._memo_lock = threading.Lock()
 
     def set_params(self, **kwargs):
+        store_metadata(dict(self.params, **kwargs), adapter_kind="lake", adapter_engine="files_inventory")
         self.params.update(kwargs)
         self._memo = None
 
@@ -702,6 +704,6 @@ class Plugin:
             "lake_id": self.params.get("lake_id"),
             "title": self.params.get("title"),
             "description": self.params.get("description"),
-            "kind": self.params.get("kind"),
+            **store_metadata(self.params, adapter_kind="lake", adapter_engine="files_inventory"),
             "root_path": str(self._root()),
         }

@@ -144,6 +144,9 @@ def assemble(config: dict[str, Any]) -> dict[str, Any]:
         lake_id = spec["lake_id"]
         plugin_name = spec.get("plugin") or "default_lake"
         lake_config = dict(config)
+        # Metadata belongs to this store, not the last plugin in the global merge.
+        for key in ("kind", "engine"):
+            lake_config.pop(key, None)
         lake_config.update(spec)
         plugins["lakes"][lake_id] = _instantiate(
             "datagov.lake", plugin_name, lake_config

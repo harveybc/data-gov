@@ -1,4 +1,4 @@
-"""Proxy a remote lake HTTP API. AAA stays in data-gov; the lake serves bytes."""
+"""Proxy a remote store API through the shared governance kernel."""
 
 from __future__ import annotations
 
@@ -11,15 +11,16 @@ from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 
 from app.httpstream import BufferedResponse, filename_from_disposition, open_stream
+from app.store_metadata import store_metadata
 from lake_plugins.errors import UnsupportedError
 
 
 class Plugin:
     plugin_params = {
         "lake_id": "remote",
-        "title": "Remote lake",
-        "description": "HTTP lake adapter",
-        "kind": "http",
+        "title": "Remote store",
+        "description": "HTTP store adapter",
+        "kind": None,
         "base_url": "http://127.0.0.1:5056",
         "root_path": "",
         "spool_dir": "./var/spool",
@@ -31,6 +32,7 @@ class Plugin:
         self._opener = None
 
     def set_params(self, **kwargs):
+        store_metadata(dict(self.params, **kwargs))
         self.params.update(kwargs)
 
     def _headers(self):
@@ -114,7 +116,7 @@ class Plugin:
             "lake_id": self.params.get("lake_id"),
             "title": self.params.get("title") or remote.get("title"),
             "description": self.params.get("description") or remote.get("description"),
-            "kind": "http",
+            **store_metadata(self.params, remote=remote),
             "root_path": remote.get("root_path") or self.params.get("base_url"),
         }
 

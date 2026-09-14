@@ -109,7 +109,8 @@ def test_http_lake_roundtrip(tmp_path):
     assert lake.read("a.parquet", start="2020-01-01", end="2020-01-02")["sha256"] == "abc"
     assert lake.query("SELECT 1")["rows"][0]["n"] == 1
     assert lake.storage()["host_free"] == 60
-    assert lake.describe()["kind"] == "http"
+    assert lake.describe()["kind"] is None
+    assert lake.describe()["transport"] == "http"
 
 
 def test_download_streams_to_spool_and_checks_hash(tmp_path):
