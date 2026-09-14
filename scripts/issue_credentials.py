@@ -49,6 +49,21 @@ def main():
         secret.write_text(secrets.token_urlsafe(32) + "\n", encoding="utf-8")
         secret.chmod(0o600)
         print("wrote var/flask_secret")
+    config_path = var / "config.json"
+    if not config_path.exists():
+        credentials = json.loads(secrets_path.read_text(encoding="utf-8"))
+        config = json.loads((ROOT / "examples/config/default.json").read_text(encoding="utf-8"))
+        salt = credentials["password_salt"]
+        config["password_salt"] = salt
+        for category, field in (("people", "password_hash"), ("services", "api_key_hash")):
+            for name, value in credentials[category].items():
+                record = config["principals"].setdefault(name, {
+                    "kind": "person" if category == "people" else "service", "role": "operator",
+                })
+                record[field] = hashlib.sha256(f"{salt}:{value}".encode()).hexdigest()
+        config_path.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
+        config_path.chmod(0o600)
+        print("wrote var/config.json with matching principal hashes")
     return 0
 
 

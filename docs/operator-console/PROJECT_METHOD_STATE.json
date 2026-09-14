@@ -1,0 +1,9 @@
+{
+  "initiative": "operator-documentation-and-store-console",
+  "current_stage": "ALPHA_ACCEPTANCE_PASSED",
+  "design": "DESIGN_AND_TESTS.md",
+  "completed": ["discovery", "requirements", "use_cases", "alpha_test_design", "architecture", "system_test_design", "component_design", "integration_test_design", "unit_test_design", "unit_implementation", "integration_verification", "system_verification", "alpha_acceptance"],
+  "next_allowed_actions": ["Publish tested changes", "Separately verify and deploy the owner-authorized N3 update"],
+  "excluded": ["Production restart", "Production database writes", "Scientific training", "External beta acceptance"],
+  "evidence": ["VERIFICATION.md", "166 passed / 1 skipped data-gov", "23 passed / 1 skipped warehouse without optional PostgreSQL test", "60 passed / 1 skipped file lake", "8 browser viewport checks", "Disposable three-service reconciliation exact"]
+}

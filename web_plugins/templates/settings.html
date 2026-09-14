@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}data-gov | Configuration{% endblock %}
+{% block content %}
+<h1 class="h4">Configuration</h1>
+{% if error %}<div class="alert alert-danger" role="alert">{{ error }}</div>{% endif %}
+{% if saved %}<div class="alert alert-success" role="status">Pending restart. Active configuration unchanged.</div>{% endif %}
+<div class="row">
+  <div class="col-lg-9">
+    <form method="post">
+      <input type="hidden" name="csrf" value="{{ session.settings_csrf }}">
+      <label for="configuration">Service, stores and policies</label>
+      <textarea id="configuration" name="configuration" class="form-control text-monospace" rows="25" spellcheck="false">{{ configuration }}</textarea>
+      <button class="btn btn-primary my-3" type="submit">Validate and save pending configuration</button>
+    </form>
+  </div>
+  <aside class="col-lg-3">
+    <h2 class="h6">Activation</h2>
+    <dl>
+      <dt>Active</dt><dd>Running process configuration</dd>
+      <dt>Pending file</dt><dd class="text-break"><code>{{ pending_path }}</code></dd>
+      <dt>Status</dt><dd>{{ 'Pending file exists' if pending_exists else 'No pending file' }}</dd>
+    </dl>
+    <h2 class="h6 mt-4">Principals</h2>
+    <div class="table-responsive"><table class="table table-sm table-dark">
+      <thead><tr><th>Name</th><th>Kind</th><th>Role</th></tr></thead>
+      <tbody>{% for person in people %}<tr><td>{{ person.name }}</td><td>{{ person.kind }}</td><td>{{ person.role }}</td></tr>{% endfor %}</tbody>
+    </table></div>
+  </aside>
+</div>
+{% endblock %}

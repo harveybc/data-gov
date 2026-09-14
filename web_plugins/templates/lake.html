@@ -23,13 +23,13 @@
       <div class="card-header"><h3 class="card-title">Inventory</h3></div>
       <div class="card-body p-0">
         <table class="table table-sm table-striped table-dark mb-0">
-          <thead><tr><th>Resource</th><th>Bytes</th><th>Hash</th></tr></thead>
+          <thead><tr><th>Resource</th><th>Kind</th><th>{{ 'Rows' if meta.kind == 'warehouse' else 'Bytes' }}</th></tr></thead>
           <tbody>
             {% for r in resources %}
             <tr>
               <td><code>{{ r.resource_id }}</code></td>
-              <td>{{ fmt_bytes(r.bytes) if r.bytes is defined else '—' }}</td>
-              <td><code>{{ r.sha256_prefix or '' }}</code></td>
+              <td>{{ r.kind or '' }}</td>
+              <td>{% if meta.kind == 'warehouse' %}{{ r.rows if r.rows is defined and r.rows is not none else 'Not scanned' }}{% else %}{{ fmt_bytes(r.bytes) if r.bytes is defined else 'Not measured' }}{% endif %}</td>
             </tr>
             {% else %}
             <tr><td colspan="3" class="text-muted">Empty inventory.</td></tr>

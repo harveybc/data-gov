@@ -312,6 +312,40 @@ class Plugin:
             session.clear()
             return redirect(url_for("login"))
 
+        @app.route("/settings", methods=["GET", "POST"])
+        @login_required
+        def settings():
+            import secrets
+            from app.operator_config import editable_config, pending_config, persist_pending, destination
+
+            if current_user().get("role") not in {"ceo", "data_engineer"}:
+                return "Operator role required", 403
+            config = plugin._context["config"]
+            session.setdefault("settings_csrf", secrets.token_urlsafe(32))
+            error = None
+            saved = False
+            text = json.dumps(editable_config(config), indent=2)
+            if request.method == "POST":
+                text = request.form.get("configuration", "")
+                if not secrets.compare_digest(request.form.get("csrf", ""), session["settings_csrf"]):
+                    error = "Reload the configuration form before saving."
+                else:
+                    try:
+                        candidate = pending_config(config, text)
+                        persist_pending(config, candidate)
+                        saved = True
+                    except (ValueError, TypeError, OSError) as exc:
+                        error = str(exc)
+            people = [
+                {"name": name, "kind": value.get("kind"), "role": value.get("role")}
+                for name, value in config.get("principals", {}).items()
+            ]
+            return render_template(
+                "settings.html", configuration=text, people=people, error=error,
+                saved=saved, pending_path=str(destination(config)),
+                pending_exists=destination(config).is_file(),
+            ), (400 if error else 200)
+
         @app.route("/")
         @login_required
         def dashboard():
