@@ -1,7 +1,7 @@
 # Contrato: sistema de gobernanza de data lakes
 
 **Fecha:** 2026-09-12  
-**Estado:** requisito de Harvey. Sustituye Gravitino/Unity/GVFS/S3 y la lectura “solo API AAA”.  
+**Estado:** requisito de Harvey. Sistema de gobernanza de datos (inventario, política, accounting, roles).  
 **No es orden de instalar Apache ni de parar I1–I5.**
 
 ## 1. Objeto
