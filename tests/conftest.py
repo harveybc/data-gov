@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import sqlite3
+import subprocess
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -27,13 +28,18 @@ DOIN_KEY = "doin-test-key"
 HEURISTIC_KEY = "heuristic-test-key"
 HUMAN_PASS = "human-test-pass"
 
-FINANCIAL_ROOT = _repo_root().parent / "financial-data"
+_COMMON_GIT = Path(subprocess.run(
+    ["git", "rev-parse", "--path-format=absolute", "--git-common-dir"],
+    cwd=_repo_root(), capture_output=True, text=True, check=True,
+).stdout.strip())
+_REPOSITORIES_ROOT = _COMMON_GIT.parent.parent
+FINANCIAL_ROOT = _REPOSITORIES_ROOT / "financial-data"
 BTC_FUNDING = (
     "market_data/crypto/funding_rates/btcusdt/funding_rates.parquet"
 )
 
 # third lake of 04_FLOW_V2 §7: the predictor sample data, skipped when the sibling is absent
-PREDICTOR_DATA = _repo_root().parent / "predictor" / "examples" / "data_downsampled"
+PREDICTOR_DATA = _REPOSITORIES_ROOT / "predictor" / "examples" / "data_downsampled"
 PREDICTOR_RESOURCE = "phase_1/normalized_d4.csv"
 HAS_PREDICTOR_DATA = (PREDICTOR_DATA / PREDICTOR_RESOURCE).is_file()
 
@@ -135,7 +141,7 @@ def gov_config(tmp_path):
             {
                 "principal": "*",
                 "lake": "olap_strict",
-                "verbs": ["discover", "query", "write_metrics"],
+                "verbs": ["discover", "query", "write_metrics", "write_terminal"],
                 "require_lineage": True,
             },
             {
@@ -193,6 +199,22 @@ def gov_config(tmp_path):
                 "include_globs": ["**/*.csv"],
                 "time_column": "ts",
                 "untimed": [LAB_STATIC],
+                "resource_contracts": {
+                    LAB_HOURLY: {
+                        "event_time_column": "ts",
+                        "available_time_column": "ts",
+                        "timezone": "NAIVE_WALL_CLOCK",
+                        "time_unit": None,
+                        "frequency": "1h",
+                    },
+                    LAB_EARLY: {
+                        "event_time_column": "ts",
+                        "available_time_column": "ts",
+                        "timezone": "NAIVE_WALL_CLOCK",
+                        "time_unit": None,
+                        "frequency": "1d",
+                    },
+                },
                 "holdout_start": HOLD_OUT,
             },
         ],

@@ -62,6 +62,29 @@ def test_ddl_creates_file_in_wal_mode(tmp_path):
     lake.set_params(sqlite_path=str(db))
 
 
+def test_terminal_dataset_schema_is_upgraded_without_dropping_rows(tmp_path):
+    db = tmp_path / "old.sqlite"
+    conn = sqlite3.connect(db)
+    conn.execute(
+        "CREATE TABLE gov_terminal_dataset (terminal_sha256 TEXT, delivery_id TEXT, "
+        "lake_id TEXT, resource_id TEXT, role TEXT, sha256 TEXT, bytes INTEGER, "
+        "source_sha256 TEXT, range_from TEXT, range_to TEXT, delivery_kind TEXT, "
+        "time_column TEXT, verification_state TEXT)"
+    )
+    conn.execute(
+        "INSERT INTO gov_terminal_dataset (terminal_sha256, sha256) VALUES ('old', 'digest')"
+    )
+    conn.commit()
+    conn.close()
+    lake = Plugin()
+    lake.set_params(sqlite_path=str(db))
+    conn = sqlite3.connect(db)
+    columns = {row[1] for row in conn.execute("PRAGMA table_info(gov_terminal_dataset)")}
+    assert "availability_contract_sha256" in columns
+    assert conn.execute("SELECT terminal_sha256 FROM gov_terminal_dataset").fetchone()[0] == "old"
+    conn.close()
+
+
 def test_write_metrics_is_idempotent_and_view_shows_latest(tmp_path):
     db = tmp_path / "cube.sqlite"
     lake = Plugin()

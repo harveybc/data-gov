@@ -24,6 +24,7 @@ PARQUET_WRITER = {
     "use_dictionary": True,
     "write_statistics": True,
 }
+CUT_MATERIALIZER = "data-gov-causal-cut.v3"
 
 
 class HoldoutError(ValueError):
@@ -64,6 +65,7 @@ class Plugin:
         "time_column": None,
         "time_columns": {},
         "time_unit": None,
+        "resource_contracts": {},
         "untimed": [],
         "holdout_start": None,
         "spool_dir": "./var/spool",
@@ -89,7 +91,9 @@ class Plugin:
         return Path(self.params.get("cuts_dir") or "./var/cuts").resolve()
 
     def _memo_path(self) -> Path:
-        return self._cuts_dir().parent / "source_sha256.json"
+        configured = self.params.get("source_hash_cache")
+        return (Path(configured).resolve() if configured
+                else self._cuts_dir().parent / "source_sha256.json")
 
     def _path(self, resource_id: str) -> Path:
         # A resource id is a relative path inside the lake: no absolute ids, no '..', no escape by symlink.
@@ -152,7 +156,7 @@ class Plugin:
                 return col
         return None
 
-    def _wall_clock(self, series):
+    def _wall_clock(self, series, *, time_unit=None, timezone_mode=None):
         """Naive timestamps on the column's own wall clock; zones are dropped, not converted."""
         import pandas as pd
         from pandas.api import types as ptypes
@@ -161,30 +165,31 @@ class Plugin:
             if ptypes.is_datetime64_any_dtype(series):
                 out = series
             elif ptypes.is_numeric_dtype(series) and not ptypes.is_bool_dtype(series):
-                unit = self.params.get("time_unit")
+                unit = time_unit if time_unit is not None else self.params.get("time_unit")
                 if not unit:
                     raise UnsupportedError("unparseable time column")
                 out = pd.to_datetime(series, unit=unit)
             else:
-                out = pd.to_datetime(series)
+                out = pd.to_datetime(series, utc=(timezone_mode == "UTC"))
         except (ValueError, TypeError, OverflowError) as exc:
             raise UnsupportedError("unparseable time column") from exc
         if not ptypes.is_datetime64_any_dtype(out):
             raise UnsupportedError("unparseable time column")
         if out.dt.tz is not None:
-            out = out.dt.tz_localize(None)
+            out = (out.dt.tz_convert("UTC").dt.tz_localize(None)
+                   if timezone_mode == "UTC" else out.dt.tz_localize(None))
         if out.isna().any():
             raise UnsupportedError("unparseable time column")
         return out
 
     def _times(self, path: Path, col: str):
-        """Yield the wall-clock time column in bounded pieces (row groups / CSV chunks)."""
+        """Yield the wall-clock time column in bounded record batches / CSV chunks."""
         if path.suffix.lower() == ".parquet":
             import pyarrow.parquet as pq
 
             pf = pq.ParquetFile(path)
-            for i in range(pf.metadata.num_row_groups):
-                column = pf.read_row_group(i, columns=[col]).column(0).to_pandas()
+            for batch in pf.iter_batches(batch_size=CSV_ROWS_PER_CHUNK, columns=[col]):
+                column = batch.column(0).to_pandas()
                 yield self._wall_clock(column)
             return
         import pandas as pd
@@ -278,26 +283,88 @@ class Plugin:
         os.replace(tmp, path)
 
     def _file_sha256(self, path: Path) -> str:
-        st = path.stat()
+        flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+        fd = os.open(path, flags)
+        try:
+            st = os.fstat(fd)
+            path_st = path.stat(follow_symlinks=False)
+            if (st.st_dev, st.st_ino) != (path_st.st_dev, path_st.st_ino):
+                raise RuntimeError("source identity changed")
+        except BaseException:
+            os.close(fd)
+            raise
         key = str(path)
         with self._memo_lock:
             entry = self._load_memo().get(key)
             if (
                 entry
+                and entry.get("dev") == st.st_dev
+                and entry.get("ino") == st.st_ino
                 and entry.get("size") == st.st_size
                 and entry.get("mtime_ns") == st.st_mtime_ns
+                and entry.get("ctime_ns") == st.st_ctime_ns
             ):
+                os.close(fd)
                 return entry["sha256"]
-        digest = sha256_file(path)
+        digest_obj = hashlib.sha256()
+        try:
+            while True:
+                block = os.read(fd, CHUNK)
+                if not block:
+                    break
+                digest_obj.update(block)
+            after = os.fstat(fd)
+            path_after = path.stat(follow_symlinks=False)
+        finally:
+            os.close(fd)
+        facts = (st.st_dev, st.st_ino, st.st_size, st.st_mtime_ns, st.st_ctime_ns)
+        after_facts = (
+            after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns, after.st_ctime_ns
+        )
+        if facts != after_facts or (after.st_dev, after.st_ino) != (
+            path_after.st_dev, path_after.st_ino
+        ):
+            raise RuntimeError("source identity changed")
+        digest = digest_obj.hexdigest()
         with self._memo_lock:
             memo = self._load_memo()
-            memo[key] = {"size": st.st_size, "mtime_ns": st.st_mtime_ns, "sha256": digest}
+            memo[key] = {
+                "dev": st.st_dev,
+                "ino": st.st_ino,
+                "size": st.st_size,
+                "mtime_ns": st.st_mtime_ns,
+                "ctime_ns": st.st_ctime_ns,
+                "sha256": digest,
+            }
             self._save_memo(memo)
         return digest
+
+    def _resource_contract(self, resource_id):
+        contracts = self.params.get("resource_contracts") or {}
+        contract = contracts.get(resource_id)
+        required = {
+            "event_time_column", "available_time_column", "timezone", "time_unit", "frequency"
+        }
+        if not isinstance(contract, dict) or set(contract) != required:
+            raise UnsupportedError("resource availability contract required")
+        for key in ("event_time_column", "available_time_column", "timezone", "frequency"):
+            if not isinstance(contract[key], str) or not contract[key]:
+                raise UnsupportedError(f"invalid resource contract {key}")
+        if contract["timezone"] not in {"UTC", "NAIVE_WALL_CLOCK"}:
+            raise UnsupportedError("invalid resource contract timezone")
+        if contract["time_unit"] is not None and contract["time_unit"] not in {
+            "s", "ms", "us", "ns"
+        }:
+            raise UnsupportedError("invalid resource contract time_unit")
+        return contract
 
     # download ----------------------------------------------------------
 
     def download(self, resource_id: str, start=None, end=None):
+        return self._download(resource_id, start, end)
+
+    def _download(self, resource_id: str, start=None, end=None, *, explicit_col=None,
+                  time_unit=None, timezone_mode=None, contract_digest=None):
         import pandas as pd
 
         path = self._path(resource_id)
@@ -308,13 +375,13 @@ class Plugin:
             col = None
             if not untimed:
                 try:
-                    col = self._time_col(self._columns(path), resource_id)
+                    col = explicit_col or self._time_col(self._columns(path), resource_id)
                 except UnsupportedError:
                     col = None
                 if holdout is not None:
                     if col is None:
                         raise PermissionError("no time column under holdout")
-                    t_max = self._t_max(path, col)
+                    t_max = self._t_max_contract(path, col, time_unit, timezone_mode)
                     if t_max is not None and not t_max < holdout:
                         raise PermissionError("spans holdout: request a range")
             return self._result(path, path.name, source_sha256, "AS_IS", col)
@@ -327,21 +394,117 @@ class Plugin:
         hi = last_day + pd.Timedelta(days=1)
         if holdout is not None and last_day >= holdout:
             raise PermissionError("holdout")
-        col = self._time_col(self._columns(path), resource_id)
+        columns = self._columns(path)
+        col = explicit_col or self._time_col(columns, resource_id)
+        if explicit_col and explicit_col not in columns:
+            raise UnsupportedError("available_time column missing")
         if col is None:
             raise UnsupportedError("no time column")
         suffix = path.suffix.lower()
-        target = self._cuts_dir() / source_sha256 / f"{start}_{end}{suffix}"
+        target_dir = self._cuts_dir() / source_sha256
+        if contract_digest:
+            target_dir = target_dir / contract_digest
+        materializer_sha = hashlib.sha256(json.dumps({
+            "schema": CUT_MATERIALIZER,
+            "writer": PARQUET_WRITER if suffix == ".parquet" else "byte-line-subset.v1",
+        }, sort_keys=True, separators=(",", ":")).encode("ascii")).hexdigest()
+        target_dir = target_dir / materializer_sha
+        target = target_dir / f"{start}_{end}{suffix}"
         filename = f"{path.stem}_{start}_{end}{path.suffix}"
         if target.is_file():
             return self._result(target, filename, source_sha256, "CUT", col)
+        target_existed = target.exists()
         if suffix == ".parquet":
-            written = self._cut_parquet(path, col, lo, hi, target, holdout)
+            written = self._cut_parquet(
+                path, col, lo, hi, target, holdout, time_unit, timezone_mode
+            )
         else:
-            written = self._cut_csv(path, col, lo, hi, target, holdout)
+            written = self._cut_csv(
+                path, col, lo, hi, target, holdout, time_unit, timezone_mode
+            )
+        if self._file_sha256(path) != source_sha256:
+            if not target_existed:
+                target.unlink(missing_ok=True)
+            raise RuntimeError("source changed while materialising cut")
         if not written:
             return self._result(path, path.name, source_sha256, "AS_IS", col)
         return self._result(target, filename, source_sha256, "CUT", col)
+
+    def _t_max_contract(self, path, col, time_unit, timezone_mode):
+        if time_unit is None and timezone_mode is None:
+            return self._t_max(path, col)
+        t_max = None
+        import pandas as pd
+        if path.suffix.lower() == ".parquet":
+            import pyarrow.parquet as pq
+            pf = pq.ParquetFile(path)
+            chunks = (
+                batch.column(0).to_pandas()
+                for batch in pf.iter_batches(
+                    batch_size=CSV_ROWS_PER_CHUNK, columns=[col]
+                )
+            )
+        else:
+            chunks = (chunk[col] for chunk in pd.read_csv(
+                path, usecols=[col], chunksize=CSV_ROWS_PER_CHUNK
+            ))
+        for chunk in chunks:
+            times = self._wall_clock(
+                chunk, time_unit=time_unit, timezone_mode=timezone_mode
+            )
+            if len(times):
+                value = times.max()
+                t_max = value if t_max is None or value > t_max else t_max
+        return t_max
+
+    def governed_download(self, resource_id: str, start=None, end=None):
+        """Return a retained descriptor for bytes validated by an availability contract."""
+        contract = self._resource_contract(resource_id)
+        contract_sha256 = hashlib.sha256(
+            json.dumps(contract, sort_keys=True, separators=(",", ":")).encode("ascii")
+        ).hexdigest()
+        info = self._download(
+            resource_id, start, end,
+            explicit_col=contract["available_time_column"],
+            time_unit=contract["time_unit"], timezone_mode=contract["timezone"],
+            contract_digest=contract_sha256,
+        )
+        path = Path(info["path"])
+        fd = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+        try:
+            before = os.fstat(fd)
+            named = path.stat(follow_symlinks=False)
+            if (before.st_dev, before.st_ino) != (named.st_dev, named.st_ino):
+                raise RuntimeError("delivery identity changed")
+            digest = hashlib.sha256()
+            size = 0
+            while True:
+                block = os.read(fd, CHUNK)
+                if not block:
+                    break
+                digest.update(block)
+                size += len(block)
+            after = os.fstat(fd)
+            named_after = path.stat(follow_symlinks=False)
+            if (
+                (before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns, before.st_ctime_ns)
+                != (after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns, after.st_ctime_ns)
+                or (after.st_dev, after.st_ino) != (named_after.st_dev, named_after.st_ino)
+            ):
+                raise RuntimeError("delivery identity changed")
+            actual = digest.hexdigest()
+            if actual != info["sha256"] or size != info["bytes"]:
+                raise RuntimeError("delivery digest changed")
+            os.lseek(fd, 0, os.SEEK_SET)
+            info = dict(
+                info, sha256=actual, bytes=size, handle=os.fdopen(fd, "rb"),
+                availability_contract_sha256=contract_sha256,
+            )
+            fd = None
+            return info
+        finally:
+            if fd is not None:
+                os.close(fd)
 
     def _result(self, path: Path, filename, source_sha256, delivery, col):
         digest = source_sha256 if delivery == "AS_IS" else self._file_sha256(path)
@@ -362,20 +525,26 @@ class Plugin:
 
     @staticmethod
     def _commit(tmp: Path, target: Path):
-        # materialised once: a cut that appeared meanwhile has the same bytes and wins
-        if target.exists():
+        """Publish without replacement; an existing target must have identical bytes."""
+        try:
+            os.link(tmp, target)
+        except FileExistsError:
+            if sha256_file(tmp) != sha256_file(target):
+                raise RuntimeError("cut identity conflict")
+        finally:
             tmp.unlink(missing_ok=True)
-        else:
-            os.replace(tmp, target)
 
-    def _cut_csv(self, path, col, lo, hi, target, holdout) -> bool:
+    def _cut_csv(self, path, col, lo, hi, target, holdout,
+                 time_unit=None, timezone_mode=None) -> bool:
         import numpy as np
         import pandas as pd
 
         masks = []
         kept_max = None
         for chunk in pd.read_csv(path, usecols=[col], chunksize=CSV_ROWS_PER_CHUNK):
-            times = self._wall_clock(chunk[col])
+            times = self._wall_clock(
+                chunk[col], time_unit=time_unit, timezone_mode=timezone_mode
+            )
             mask = (times >= lo) & (times < hi)
             masks.append(mask.to_numpy())
             if mask.any():
@@ -407,43 +576,41 @@ class Plugin:
         self._commit(tmp, target)
         return True
 
-    def _cut_parquet(self, path, col, lo, hi, target, holdout) -> bool:
+    def _cut_parquet(self, path, col, lo, hi, target, holdout,
+                     time_unit=None, timezone_mode=None) -> bool:
         import pyarrow as pa
         import pyarrow.parquet as pq
 
         pf = pq.ParquetFile(path)
-        n_groups = pf.metadata.num_row_groups
-        masks = []
         kept_max = None
         removed = False
-        for i in range(n_groups):
-            times = self._wall_clock(pf.read_row_group(i, columns=[col]).column(0).to_pandas())
-            mask = ((times >= lo) & (times < hi)).to_numpy()
-            masks.append(mask)
-            if not mask.all():
-                removed = True
-            if mask.any():
-                m = times[mask].max()
-                kept_max = m if kept_max is None or m > kept_max else kept_max
-        if not removed:
-            return False
-        self._assert_holdout(kept_max, holdout)
-        rg_size = max(
-            (pf.metadata.row_group(i).num_rows for i in range(n_groups)), default=0
-        ) or 1
         tmp = self._tmp_for(target)
         try:
             writer = pq.ParquetWriter(str(tmp), pf.schema_arrow, **PARQUET_WRITER)
             try:
-                for i, mask in enumerate(masks):
+                column_index = pf.schema_arrow.get_field_index(col)
+                for batch in pf.iter_batches(batch_size=CSV_ROWS_PER_CHUNK):
+                    times = self._wall_clock(
+                        batch.column(column_index).to_pandas(),
+                        time_unit=time_unit, timezone_mode=timezone_mode,
+                    )
+                    mask = ((times >= lo) & (times < hi)).to_numpy()
+                    if not mask.all():
+                        removed = True
                     if not mask.any():
                         continue
-                    table = pf.read_row_group(i)
+                    m = times[mask].max()
+                    kept_max = m if kept_max is None or m > kept_max else kept_max
+                    table = pa.Table.from_batches([batch])
                     if not mask.all():
                         table = table.filter(pa.array(mask))
-                    writer.write_table(table, row_group_size=rg_size)
+                    writer.write_table(table, row_group_size=CSV_ROWS_PER_CHUNK)
             finally:
                 writer.close()
+            if not removed:
+                tmp.unlink(missing_ok=True)
+                return False
+            self._assert_holdout(kept_max, holdout)
         except BaseException:
             tmp.unlink(missing_ok=True)
             raise

@@ -60,7 +60,8 @@
       "verbs": [
         "discover",
         "query",
-        "write_metrics"
+        "write_metrics",
+        "write_terminal"
       ],
       "require_lineage": true,
       "deny_from": "2025-01-01"

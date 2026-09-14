@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import json
 import sqlite3
 import threading
+import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -64,6 +66,72 @@ class Plugin:
             )
             self._conn.execute(
                 "CREATE INDEX IF NOT EXISTS ix_events_lake_resource ON events(lake_id, resource_id)"
+            )
+            self._conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS governed_campaigns (
+                    campaign_sha256 TEXT PRIMARY KEY,
+                    campaign_key TEXT NOT NULL,
+                    actor TEXT NOT NULL,
+                    classification TEXT NOT NULL,
+                    terminal_lake TEXT NOT NULL,
+                    body_json TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    UNIQUE(actor, campaign_key)
+                )
+                """
+            )
+            self._conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS governed_deliveries (
+                    delivery_id TEXT PRIMARY KEY,
+                    campaign_sha256 TEXT NOT NULL,
+                    unit_id TEXT NOT NULL,
+                    actor TEXT NOT NULL,
+                    lake_id TEXT NOT NULL,
+                    resource_id TEXT NOT NULL,
+                    role TEXT NOT NULL,
+                    range_from TEXT,
+                    range_to TEXT,
+                    sha256 TEXT NOT NULL,
+                    bytes INTEGER NOT NULL,
+                    source_sha256 TEXT,
+                    delivery_kind TEXT,
+                    time_column TEXT,
+                    availability_contract_sha256 TEXT,
+                    state TEXT NOT NULL,
+                    cached INTEGER,
+                    created_at TEXT NOT NULL,
+                    verified_at TEXT
+                )
+                """
+            )
+            self._conn.execute(
+                "CREATE INDEX IF NOT EXISTS ix_governed_delivery_campaign "
+                "ON governed_deliveries(campaign_sha256, unit_id)"
+            )
+            delivery_columns = {
+                row[1] for row in self._conn.execute("PRAGMA table_info(governed_deliveries)")
+            }
+            if "availability_contract_sha256" not in delivery_columns:
+                self._conn.execute(
+                    "ALTER TABLE governed_deliveries "
+                    "ADD COLUMN availability_contract_sha256 TEXT"
+                )
+            self._conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS governed_terminals (
+                    terminal_sha256 TEXT PRIMARY KEY,
+                    campaign_sha256 TEXT NOT NULL,
+                    unit_id TEXT NOT NULL,
+                    generation INTEGER NOT NULL,
+                    status TEXT NOT NULL,
+                    terminal_lake TEXT NOT NULL,
+                    body_json TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    UNIQUE(campaign_sha256, unit_id, generation)
+                )
+                """
             )
             self._conn.commit()
         return self._conn
@@ -246,3 +314,175 @@ class Plugin:
             """,
             (sha256, lake_id, resource_id, actor, *keys),
         )
+
+    # Flow v3 ---------------------------------------------------------------
+
+    def register_campaign(self, campaign, canonical_json):
+        with self._lock:
+            conn = self._db()
+            existing = conn.execute(
+                "SELECT campaign_sha256, body_json FROM governed_campaigns "
+                "WHERE actor = ? AND campaign_key = ?",
+                (campaign["actor"], campaign["campaign_key"]),
+            ).fetchone()
+            if existing:
+                if existing["campaign_sha256"] != campaign["campaign_sha256"]:
+                    raise ValueError("campaign_key already registered with different content")
+                return False
+            conn.execute(
+                """
+                INSERT INTO governed_campaigns (
+                    campaign_sha256, campaign_key, actor, classification,
+                    terminal_lake, body_json, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    campaign["campaign_sha256"], campaign["campaign_key"], campaign["actor"],
+                    campaign["classification"], campaign["terminal_lake"], canonical_json,
+                    _utc(),
+                ),
+            )
+            conn.commit()
+            return True
+
+    def campaign(self, campaign_sha256):
+        row = self._one(
+            "SELECT body_json FROM governed_campaigns WHERE campaign_sha256 = ?",
+            (campaign_sha256,),
+        )
+        if not row:
+            return None
+        return json.loads(row["body_json"])
+
+    def create_delivery(self, *, campaign_sha256, unit_id, actor, lake_id, resource_id,
+                        role, range_from, range_to, sha256, bytes_count,
+                        source_sha256, delivery_kind, time_column,
+                        availability_contract_sha256):
+        if not isinstance(unit_id, str) or not unit_id:
+            raise ValueError("governed delivery requires unit_id")
+        delivery_id = uuid.uuid4().hex
+        with self._lock:
+            conn = self._db()
+            conn.execute(
+                """
+                INSERT INTO governed_deliveries (
+                    delivery_id, campaign_sha256, unit_id, actor, lake_id, resource_id,
+                    role, range_from, range_to, sha256, bytes, source_sha256,
+                    delivery_kind, time_column, availability_contract_sha256,
+                    state, cached, created_at, verified_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'AUTHORIZED', NULL, ?, NULL)
+                """,
+                (
+                    delivery_id, campaign_sha256, unit_id, actor, lake_id, resource_id,
+                    role, range_from, range_to, sha256, int(bytes_count), source_sha256,
+                    delivery_kind, time_column, availability_contract_sha256, _utc(),
+                ),
+            )
+            conn.commit()
+        return delivery_id
+
+    def delivery(self, delivery_id):
+        return self._one(
+            "SELECT * FROM governed_deliveries WHERE delivery_id = ?", (delivery_id,)
+        )
+
+    def confirm_delivery(self, delivery_id, *, campaign_sha256, actor, sha256,
+                         bytes_count, cached):
+        with self._lock:
+            conn = self._db()
+            row = conn.execute(
+                "SELECT * FROM governed_deliveries WHERE delivery_id = ?", (delivery_id,)
+            ).fetchone()
+            if not row:
+                raise LookupError("unknown delivery")
+            if row["campaign_sha256"] != campaign_sha256 or row["actor"] != actor:
+                raise PermissionError("delivery does not belong to campaign")
+            if row["sha256"] != sha256 or int(row["bytes"]) != int(bytes_count):
+                raise RuntimeError("delivery confirmation mismatch")
+            state = "VERIFIED_CACHE" if cached else "VERIFIED_TRANSFER"
+            if row["state"] in ("VERIFIED_CACHE", "VERIFIED_TRANSFER"):
+                if row["state"] != state:
+                    raise RuntimeError("delivery confirmation conflict")
+                return state, False
+            conn.execute(
+                "UPDATE governed_deliveries SET state = ?, cached = ?, verified_at = ? "
+                "WHERE delivery_id = ? AND state = 'AUTHORIZED'",
+                (state, int(cached), _utc(), delivery_id),
+            )
+            conn.commit()
+            return state, True
+
+    def verified_deliveries(self, delivery_ids, *, campaign_sha256, actor, unit_id):
+        if not delivery_ids:
+            return []
+        marks = ",".join("?" for _ in delivery_ids)
+        rows = self._rows(
+            f"SELECT * FROM governed_deliveries WHERE delivery_id IN ({marks})",
+            tuple(delivery_ids),
+        )
+        if len(rows) != len(delivery_ids):
+            raise ValueError("unknown delivery")
+        by_id = {row["delivery_id"]: row for row in rows}
+        ordered = []
+        for delivery_id in delivery_ids:
+            row = by_id[delivery_id]
+            if row["campaign_sha256"] != campaign_sha256 or row["actor"] != actor:
+                raise PermissionError("delivery does not belong to campaign")
+            if row["unit_id"] != unit_id:
+                raise PermissionError("delivery does not belong to unit")
+            if row["state"] not in ("VERIFIED_CACHE", "VERIFIED_TRANSFER"):
+                raise ValueError("delivery is not verified")
+            ordered.append(row)
+        return ordered
+
+    def terminal_slot(self, campaign_sha256, unit_id, generation):
+        return self._one(
+            "SELECT * FROM governed_terminals WHERE campaign_sha256 = ? "
+            "AND unit_id = ? AND generation = ?",
+            (campaign_sha256, unit_id, int(generation)),
+        )
+
+    def record_terminal(self, terminal, canonical_json):
+        existing = self.terminal_slot(
+            terminal["campaign_sha256"], terminal["unit_id"], terminal["generation"]
+        )
+        if existing:
+            if existing["terminal_sha256"] != terminal["terminal_sha256"]:
+                raise RuntimeError("terminal generation conflict")
+            return False
+        with self._lock:
+            conn = self._db()
+            try:
+                conn.execute(
+                    """
+                    INSERT INTO governed_terminals (
+                        terminal_sha256, campaign_sha256, unit_id, generation,
+                        status, terminal_lake, body_json, created_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        terminal["terminal_sha256"], terminal["campaign_sha256"],
+                        terminal["unit_id"], terminal["generation"], terminal["status"],
+                        terminal["terminal_lake"], canonical_json, _utc(),
+                    ),
+                )
+            except sqlite3.IntegrityError:
+                conn.rollback()
+                existing = conn.execute(
+                    "SELECT terminal_sha256 FROM governed_terminals WHERE campaign_sha256 = ? "
+                    "AND unit_id = ? AND generation = ?",
+                    (terminal["campaign_sha256"], terminal["unit_id"], terminal["generation"]),
+                ).fetchone()
+                if existing and existing["terminal_sha256"] == terminal["terminal_sha256"]:
+                    return False
+                raise RuntimeError("terminal generation conflict") from None
+            conn.commit()
+            return True
+
+    def terminal_digests(self, campaign_sha256):
+        rows = self._rows(
+            "SELECT terminal_sha256, unit_id, generation FROM governed_terminals "
+            "WHERE campaign_sha256 = ? ORDER BY unit_id, generation",
+            (campaign_sha256,),
+        )
+        return rows

@@ -107,7 +107,9 @@ def test_cut_naive_csv_is_a_byte_subset(tmp_path, root):
     assert info["delivery"] == "CUT"
     assert info["time_column"] == "ts"
     cut = Path(info["path"])
-    assert cut == tmp_path / "cuts" / info["source_sha256"] / "2024-12-30_2024-12-31.csv"
+    assert cut.parent.parent == tmp_path / "cuts" / info["source_sha256"]
+    assert len(cut.parent.name) == 64
+    assert cut.name == "2024-12-30_2024-12-31.csv"
     assert info["filename"] == "hourly_2024-12-30_2024-12-31.csv"
     source_lines = (root / LAB_HOURLY).read_bytes().split(b"\n")
     cut_lines = cut.read_bytes().split(b"\n")
@@ -154,6 +156,24 @@ def test_parquet_tokyo_daily_excludes_first_2025_bar(tmp_path, root):
     assert got.max() == pd.Timestamp("2024-12-31")
     assert cut.metadata.row_group(0).column(0).compression == "SNAPPY"
     assert cut.schema_arrow.equals(pq.read_schema(root / "daily.parquet"))
+
+
+def test_parquet_cut_never_reads_an_unbounded_row_group(tmp_path, root, monkeypatch):
+    import pandas as pd
+    import pyarrow.parquet as pq
+
+    pd.DataFrame({
+        "ts": pd.date_range("2024-01-01", periods=12, freq="D"),
+        "value": range(12),
+    }).to_parquet(root / "bounded.parquet", index=False, row_group_size=12)
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("governing cuts must use bounded record batches")
+
+    monkeypatch.setattr(pq.ParquetFile, "read_row_group", forbidden)
+    lake = _lake(tmp_path, root)
+    info = lake.download("bounded.parquet", start="2024-01-03", end="2024-01-05")
+    assert pq.read_table(info["path"])["value"].to_pylist() == [2, 3, 4]
 
 
 def test_multiline_quoted_csv_is_unsupported(tmp_path, root):

@@ -192,6 +192,56 @@ class Plugin:
             "spool": True,
         }
 
+    def governed_download(self, resource_id: str, start=None, end=None):
+        """Retain the exact remote bytes after the lake applies its availability contract."""
+        response = self._open(
+            "/api/v2/download", {"resource": resource_id, "from": start, "to": end}
+        )
+        spool = Path(self.params.get("spool_dir") or "./var/spool").resolve()
+        spool.mkdir(parents=True, exist_ok=True)
+        part = spool / f"{uuid.uuid4().hex}.part"
+        digest = hashlib.sha256()
+        size = 0
+        try:
+            if response.status != 200:
+                self._raise_http(response.status, response.read_json())
+            with open(part, "xb") as out:
+                for chunk in response.iter_chunks():
+                    digest.update(chunk)
+                    out.write(chunk)
+                    size += len(chunk)
+                out.flush()
+                import os
+
+                os.fsync(out.fileno())
+        except BaseException:
+            part.unlink(missing_ok=True)
+            raise
+        finally:
+            response.close()
+        claimed = (response.header("X-Content-SHA256") or "").lower()
+        if digest.hexdigest() != claimed:
+            part.unlink(missing_ok=True)
+            raise RuntimeError("lake hash mismatch")
+        contract_sha = (response.header("X-Availability-Contract-SHA256") or "").lower()
+        if len(contract_sha) != 64 or any(char not in "0123456789abcdef" for char in contract_sha):
+            part.unlink(missing_ok=True)
+            raise RuntimeError("lake availability contract identity missing")
+        handle = open(part, "rb")
+        part.unlink()
+        filename = filename_from_disposition(response.header("Content-Disposition"))
+        return {
+            "handle": handle,
+            "filename": filename or Path(resource_id).name,
+            "sha256": claimed,
+            "bytes": size,
+            "source_sha256": response.header("X-Source-SHA256"),
+            "delivery": response.header("X-Delivery"),
+            "time_column": response.header("X-Time-Column") or "",
+            "availability_contract_sha256": contract_sha,
+            "spool": True,
+        }
+
     def write_metrics(self, report: dict):
         response = self._open("/api/v1/metrics", method="POST", json_body=report)
         try:
@@ -205,3 +255,26 @@ class Plugin:
             "already_stored": bool(body.get("already_stored")),
             "lineage": body.get("lineage"),
         }
+
+    def write_terminal(self, terminal: dict):
+        response = self._open("/api/v2/terminals", method="POST", json_body=terminal)
+        try:
+            body = response.read_json()
+        finally:
+            response.close()
+        if response.status not in (200, 201):
+            self._raise_http(response.status, body)
+        return {
+            "stored": bool(body.get("stored")),
+            "already_stored": bool(body.get("already_stored")),
+            "terminal_sha256": body.get("terminal_sha256"),
+        }
+
+    def terminal_digests(self, campaign_sha256):
+        payload = self._get(
+            "/api/v2/terminals", {"campaign_sha256": campaign_sha256}
+        )
+        rows = payload.get("terminals")
+        if not isinstance(rows, list):
+            raise RuntimeError("remote lake returned invalid terminal inventory")
+        return rows

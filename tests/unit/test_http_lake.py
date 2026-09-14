@@ -73,6 +73,13 @@ def _stub():
         response.headers["X-Time-Column"] = "ts"
         return response
 
+    @app.get("/api/v2/download")
+    def governed_download():
+        response = download()
+        if isinstance(response, Response):
+            response.headers["X-Availability-Contract-SHA256"] = "a" * 64
+        return response
+
     @app.post("/api/v1/metrics")
     def metrics():
         report = request.get_json()
@@ -123,6 +130,18 @@ def test_download_hash_mismatch_leaves_nothing(tmp_path):
     with pytest.raises(RuntimeError, match="lake hash mismatch"):
         lake.download("lying.csv")
     assert list((tmp_path / "spool").iterdir()) == []
+
+
+def test_governed_download_retains_verified_unlinked_spool(tmp_path):
+    lake = _lake(tmp_path)
+    info = lake.governed_download("early.csv")
+    assert list((tmp_path / "spool").iterdir()) == []
+    try:
+        assert info["handle"].read() == BODY
+    finally:
+        info["handle"].close()
+    assert info["sha256"] == BODY_SHA
+    assert info["availability_contract_sha256"] == "a" * 64
 
 
 def test_download_maps_lake_errors(tmp_path):
