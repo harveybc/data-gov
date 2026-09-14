@@ -36,7 +36,7 @@ Experiment / agent
        |                                               |
        | HTTP adapter                                  | HTTP adapter
        v                                               v
-financial-data/lake                              predictor/olap/lake
+data-lake + financial-data-store                 data-warehouse + predictor-olap-store
 CSV / Parquet file inventory                     PostgreSQL warehouse
 source bytes and materialized cuts               tables, views, gov_* results
 ```
@@ -44,15 +44,22 @@ source bytes and materialized cuts               tables, views, gov_* results
 | Component | Implementation | Default local address |
 |---|---|---|
 | Governance kernel, catalog, policy and accounting | **This repository** | `http://127.0.0.1:5055` |
-| File lake and its operator console | [financial-data/lake](https://github.com/harveybc/financial-data/tree/master/lake) | `http://127.0.0.1:5056` |
-| Warehouse adapter and its operator console | [predictor/olap/lake](https://github.com/harveybc/predictor/tree/master/olap/lake) | `http://127.0.0.1:5057` |
+| File host and console; external financial provider | [data-lake](https://github.com/harveybc/data-lake) + [financial-data/store](https://github.com/harveybc/financial-data/tree/master/store) | `http://127.0.0.1:5056` |
+| Warehouse host and console; external OLAP provider | [data-warehouse](https://github.com/harveybc/data-warehouse) + [predictor/olap/store](https://github.com/harveybc/predictor/tree/master/olap/store) | `http://127.0.0.1:5057` |
 | Existing OLAP schema and ETL | [predictor/olap](https://github.com/harveybc/predictor/tree/master/olap) | PostgreSQL connection, not a web service |
 | Analytical dashboards | Metabase, configured separately against PostgreSQL | Deployment-specific |
 
-**The warehouse is currently implemented in predictor, not in data-gov.**
-Its directory and Python distribution retain the historical name `lake` /
-`olap-lake`; the store it exposes is a **warehouse**. Neither service requires
-the predictor training dependencies just to run its own adapter.
+**The reusable warehouse host is in data-warehouse; its OLAP provider and
+historical schema are in predictor.** The reusable file host is in data-lake;
+its financial provider is in financial-data. Neither host needs predictor's
+training dependencies. The older `financial-data/lake` and `predictor/olap/lake`
+adapters remain as migration references, not the current deployment entry points.
+
+The new hosts were deployed on 2026-09-14. A production micro-run using a separate
+synthetic source verified delivery, metrics, idempotence and reconciliation.
+Financial inventory stayed unchanged; financial governing downloads still need
+producer-derived resource contracts. See the
+[acceptance receipt](https://github.com/harveybc/predictor/blob/master/docs/handoffs/MUSASHI_STORE_HOSTS_PRODUCTION_ACCEPTANCE_2026_09_14.md).
 
 A **lake** keeps native files interpreted on read. A **warehouse** exposes
 structured tables and views with defined schemas. Both can be local or remote;
@@ -79,8 +86,10 @@ reporting API; they do not receive a database connection for direct INSERTs.
 
 ## Quickstart
 
-Use **one Python environment per service**. Current packages share names such
-as `app` and `web_plugins`; co-installing them can resolve the wrong modules.
+Use **isolated service environments**. Legacy adapters share names such
+as `app` and `web_plugins`; co-installing those can resolve the wrong modules.
+The new hosts and providers use distinct package namespaces and were also tested
+together in a clean, dedicated store environment.
 Python 3.12 is the tested version for this guide. The package does not declare
 an enforced minimum Python version. No GPU is needed.
 
@@ -144,43 +153,46 @@ activate it during a controlled restart:
 sh scripts/serve.sh --load_config var/operator_config.json
 ```
 
-For the warehouse, activate its pending file with
-`sh scripts/serve.sh --load_config examples/config/local.json`. The warehouse's
-`data_gov_url` is a navigation link, **not automatic registration**; register the
-warehouse's API URL in data-gov as shown below. The file-lake console currently
-applies its small inventory settings live and saves `local.json`; do not change
-them during governed deliveries. These are local operator consoles, not hosted
-multi-tenant database-administration products.
+For either reusable host, validate the pending configuration and select it as the
+next active configuration during a controlled service restart. Keep the active
+and pending paths distinct. Saving in the new host consoles does not change the
+live inventory. A dashboard link is **not automatic registration**: register the
+host API URL in data-gov as shown below. These are local operator consoles, not
+hosted multi-tenant database-administration products.
 
 ## Connect a data lake
 
-The first external file-lake implementation is
-[financial-data/lake](https://github.com/harveybc/financial-data/tree/master/lake).
-Its [README](https://github.com/harveybc/financial-data/blob/master/lake/README.md)
-describes its API and dependencies.
-
-In that directory, use a separate environment, install `requirements.txt` and
-the package, then start with a configuration whose `root_path` is the intended
-data directory:
+Install [data-lake](https://github.com/harveybc/data-lake) and the separately
+packaged [financial provider](https://github.com/harveybc/financial-data/tree/master/store).
+The provider reads the configured data directory; installation does not download
+financial datasets. Pin reviewed commits in reproducible deployments.
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
-pip install -e .
+pip install "git+https://github.com/harveybc/data-lake.git"
+pip install "git+https://github.com/harveybc/financial-data.git#subdirectory=store"
 export DATA_GOV_LAKE_TOKEN_FILE=/absolute/path/to/data-gov/var/lake_token
-sh scripts/serve.sh --load_config /absolute/path/to/financial-lake.json
+python -m data_lake_service.main --load_config /absolute/path/to/financial-host.json
 ```
 
 The adapter config, not the governance config, owns the physical files:
 
 ```json
 {
-  "lake_id": "financial_files",
-  "root_path": "/absolute/path/to/financial-data",
-  "include_globs": ["market_data/**/*.parquet", "market_data/**/*.csv"],
-  "holdout_start": "2025-01-01",
-  "resource_contracts": {}
+  "store_id": "financial_files",
+  "web_host": "127.0.0.1",
+  "web_port": 5056,
+  "backend": {
+    "entry_point": "financial_files",
+    "distribution": "financial-data-store",
+    "settings": {
+      "root_path": "/absolute/path/to/financial-data",
+      "include_globs": ["market_data/**/*.parquet", "market_data/**/*.csv"],
+      "holdout_start": "2025-01-01",
+      "resource_contracts": {}
+    }
+  }
 }
 ```
 
@@ -221,19 +233,35 @@ universal cutoff for every dataset.
 
 ## Connect a warehouse
 
-Use [predictor/olap/lake](https://github.com/harveybc/predictor/tree/master/olap/lake),
-whose [README](https://github.com/harveybc/predictor/blob/master/olap/lake/README.md)
-documents table grains, the API, local development and database configuration.
-Install only that directory's dependencies in its own environment.
+Install [data-warehouse](https://github.com/harveybc/data-warehouse) and
+[predictor-olap-store](https://github.com/harveybc/predictor/tree/master/olap/store)
+in a dedicated environment. PostgreSQL may be local or remote.
 
 ```bash
+pip install "git+https://github.com/harveybc/data-warehouse.git"
+pip install "git+https://github.com/harveybc/predictor.git#subdirectory=olap/store"
 export PGHOST=127.0.0.1
 export PGPORT=5432
 export PGDATABASE=predictor_olap
 export PGUSER=your_database_user
 # Set PGPASSWORD in the service environment, not in a committed script.
 export DATA_GOV_LAKE_TOKEN_FILE=/absolute/path/to/data-gov/var/lake_token
-sh scripts/serve.sh
+python -m data_warehouse_service.main --load_config /absolute/path/to/warehouse-host.json
+```
+
+`warehouse-host.json` selects the installed provider, not a repository import:
+
+```json
+{
+  "store_id": "olap_cube",
+  "web_host": "127.0.0.1",
+  "web_port": 5057,
+  "backend": {
+    "entry_point": "predictor_olap",
+    "distribution": "predictor-olap-store",
+    "settings": {"schema": "public"}
+  }
+}
 ```
 
 The adapter needs an existing PostgreSQL database. It creates its additive
