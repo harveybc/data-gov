@@ -1,23 +1,17 @@
 # data-gov
 
-Data **governance** for several lakes (on-prem or remote later). Not a
-cloud catalog, not Gravitino, not a thin AAA toy.
-
-It does three jobs:
-
-1. **Kernel** — inventory, automatic policy, accounting (hashes, allow/deny, experiment id).
-2. **Lake adapters** — each lake is a plugin. `financial-data` and a lab OLAP are the first two, not the ceiling.
-3. **Roles** — Hermes prompts that fire **only on events**. CEO (Harvey) and data engineer (Musashi) stay human. A data-scientist prompt must **not** gate a `GET`.
-
-Experiments do not wait for a ticket. Allow/deny is code + inventory.
+**Data governance** for multiple data lakes: inventory, automatic policy,
+append-only accounting, and event-driven roles. Experiments download
+through this kernel (hash, experiment id, holdout). They do not wait
+for a human ticket.
 
 | Doc | What |
 |---|---|
 | [docs/00_CONTRATO.md](docs/00_CONTRATO.md) | Product contract |
 | [docs/01_WORKPLAN.md](docs/01_WORKPLAN.md) | Phases G0–G7 |
 | [docs/02_DESIGN.md](docs/02_DESIGN.md) | Plugin types and HTTP API |
-| [docs/03_LAKE_ADAPTER.md](docs/03_LAKE_ADAPTER.md) | **How to build/connect a lake** |
-| [docs/04_FLOW_V2.md](docs/04_FLOW_V2.md) | **Contract**: download with hash, report metrics, lineage |
+| [docs/03_LAKE_ADAPTER.md](docs/03_LAKE_ADAPTER.md) | Connecting a lake (adapter + config) |
+| [docs/04_FLOW_V2.md](docs/04_FLOW_V2.md) | Download, report metrics, lineage |
 
 ## Requirements
 
@@ -60,7 +54,7 @@ cd ../financial-data/lake && pip install -e . && sh scripts/serve.sh
 cd ../predictor/olap/lake && pip install -e . && sh scripts/serve.sh
 # http://127.0.0.1:5057  tables in predictor_olap
 
-# 3) AAA
+# 3) governance kernel
 cd data-gov
 PYTHONPATH=. python3 -m app.main --load_config examples/config/default.json
 # same: sh scripts/serve.sh  → http://127.0.0.1:5055/login
@@ -150,18 +144,13 @@ Open **this** repository in Claude, Cursor, Codex, Copilot, Grok, … and paste:
 > `var/credentials.json` (not a URL), and do not print the passwords in
 > git. Do not stop GPU/Postgres/Metabase. Do not add S3/Gravitino.
 
-Longer lake work: [docs/03_LAKE_ADAPTER.md](docs/03_LAKE_ADAPTER.md).
+Connecting another lake: [docs/03_LAKE_ADAPTER.md](docs/03_LAKE_ADAPTER.md).
 
-## How a data lake must be built to use this AAA
+## Lakes in this checkout
 
-Short version (full text in the adapter doc):
-
-1. Clients never `open()` the lake. They call data-gov.
-2. The lake is a **setuptools plugin** in group `datagov.lake` (or, later, the same verbs over HTTP — not shipped yet).
-3. It must implement `discover` (inventory), `describe`, `storage`, and either `download`+`coverage` (+ `read` for small JSON slices) for files or `query` (SQL, SELECT only) + `write_metrics` (append-only `gov_*`) for a cube.
-4. `discover` is the inventory. Unknown `resource_id` → deny.
-5. Register it in `setup.py`, `pip install -e .`, add a `lakes[]` entry and `policies[]` in the JSON.
-6. Reuse `files_lake` if it is a directory of csv/parquet; reuse `sql_lake` if it is SQLite. New kinds = new plugin, same group.
+Clients talk to **data-gov**, not to the lake disk. A lake is a plugin
+(`datagov.lake`) plus a `lakes[]` block and policies. Unknown
+`resource_id` → deny.
 
 Shipped examples:
 

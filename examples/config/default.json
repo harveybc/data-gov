@@ -82,7 +82,7 @@
       "plugin": "http_lake",
       "lake_id": "financial_files",
       "title": "financial-data",
-      "description": "File lake service at :5056. Inventory is the real data roots (stat only). AAA here.",
+      "description": "File lake at :5056. Inventory is the data roots (stat only).",
       "kind": "http",
       "base_url": "http://127.0.0.1:5056",
       "holdout_start": "2025-01-01"
@@ -91,7 +91,7 @@
       "plugin": "http_lake",
       "lake_id": "olap_cube",
       "title": "predictor OLAP cube",
-      "description": "Cube service at :5057 (PG*): SELECT-only query, append-only gov_* via write_metrics. Never reset_olap. AAA here.",
+      "description": "Cube at :5057 (PG*): SELECT-only query, append-only gov_* via write_metrics. Never reset_olap.",
       "kind": "http",
       "base_url": "http://127.0.0.1:5057",
       "holdout_start": "2025-01-01"
