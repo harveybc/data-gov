@@ -1,6 +1,7 @@
 """User acceptance for the governing Flow v3."""
 
 import hashlib
+import io
 import json
 import re
 import sqlite3
@@ -64,6 +65,31 @@ def test_governing_download_requires_declared_unit(client):
     response = _download(client, campaign, unit=None)
     assert response.status_code == 403
     assert response.get_json()["error"] == "unit is not declared by campaign"
+
+
+def test_delivery_setup_failure_closes_the_lake_descriptor(
+    client, runtime, monkeypatch
+):
+    campaign = _submit(client, _campaign(campaign_key="descriptor-cleanup"))
+    handle = io.BytesIO(b"governed bytes")
+    lake = runtime["plugins"]["lakes"]["lab_files"]
+    monkeypatch.setattr(lake, "governed_download", lambda *args, **kwargs: {
+        "handle": handle,
+        "sha256": hashlib.sha256(b"governed bytes").hexdigest(),
+        "bytes": len(b"governed bytes"),
+        "source_sha256": "a" * 64,
+        "delivery": "AS_IS",
+        "time_column": "ts",
+        "availability_contract_sha256": "b" * 64,
+    })
+    monkeypatch.setattr(
+        runtime["plugins"]["accounting"], "create_delivery",
+        lambda **kwargs: (_ for _ in ()).throw(RuntimeError("accounting unavailable")),
+    )
+
+    with pytest.raises(RuntimeError, match="accounting unavailable"):
+        _download(client, campaign)
+    assert handle.closed
 
 
 def test_accounting_cannot_create_unitless_governing_delivery(runtime):

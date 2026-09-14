@@ -713,6 +713,7 @@ class Plugin:
                 response.headers["Retry-After"] = RETRY_AFTER
                 return response, 503
             handed_off = False
+            handle = None
             try:
                 try:
                     info = lake.governed_download(resource, start=start, end=end)
@@ -779,6 +780,8 @@ class Plugin:
                 return response
             finally:
                 if not handed_off:
+                    if handle is not None and not handle.closed:
+                        handle.close()
                     plugin._slots.release()
 
         @app.route("/api/v2/deliveries/<delivery_id>/confirm", methods=["POST"])
