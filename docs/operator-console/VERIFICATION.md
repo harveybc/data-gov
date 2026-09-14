@@ -54,3 +54,9 @@ Publication and deployment are tracked separately. A running process does not
 reload when a README or default branch changes. The production N3 follow-up
 has its own deployment receipt and reconciled micro-run; this test report
 alone does not grant scientific acceptance or record a deployment.
+
+Follow-up completed: [the separately authorized N3 deployment and production
+micro-run](https://github.com/harveybc/predictor/blob/51ad761/docs/handoffs/MUSASHI_N3_PRODUCTION_ACCEPTANCE_2026_09_14.md)
+passed. Three services were updated, six deliveries and 90 metrics were
+recorded, reconciliation was exact, and repeated outbox flushes added no rows.
+This operational proof remains distinct from the disposable tests above.

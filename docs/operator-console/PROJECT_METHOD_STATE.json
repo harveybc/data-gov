@@ -1,9 +1,10 @@
 {
   "initiative": "operator-documentation-and-store-console",
-  "current_stage": "ALPHA_ACCEPTANCE_PASSED",
+  "current_stage": "PUBLISHED_AND_DEPLOYMENT_REFERENCED",
   "design": "DESIGN_AND_TESTS.md",
-  "completed": ["discovery", "requirements", "use_cases", "alpha_test_design", "architecture", "system_test_design", "component_design", "integration_test_design", "unit_test_design", "unit_implementation", "integration_verification", "system_verification", "alpha_acceptance"],
-  "next_allowed_actions": ["Publish tested changes", "Separately verify and deploy the owner-authorized N3 update"],
+  "completed": ["discovery", "requirements", "use_cases", "alpha_test_design", "architecture", "system_test_design", "component_design", "integration_test_design", "unit_test_design", "unit_implementation", "integration_verification", "system_verification", "alpha_acceptance", "publication", "remote_bytes_verified"],
+  "next_allowed_actions": ["Maintain the published contract; reusable store hosts follow their separate test-led migration plan"],
+  "separate_deployment_receipt": "https://github.com/harveybc/predictor/blob/51ad761/docs/handoffs/MUSASHI_N3_PRODUCTION_ACCEPTANCE_2026_09_14.md",
   "excluded": ["Production restart", "Production database writes", "Scientific training", "External beta acceptance"],
   "evidence": ["VERIFICATION.md", "166 passed / 1 skipped data-gov", "23 passed / 1 skipped warehouse without optional PostgreSQL test", "60 passed / 1 skipped file lake", "8 browser viewport checks", "Disposable three-service reconciliation exact"]
 }
