@@ -61,6 +61,12 @@ Financial inventory stayed unchanged; financial governing downloads still need
 producer-derived resource contracts. See the
 [acceptance receipt](https://github.com/harveybc/predictor/blob/master/docs/handoffs/MUSASHI_STORE_HOSTS_PRODUCTION_ACCEPTANCE_2026_09_14.md).
 
+The expanded synthetic catalogue now supports successful bounded production
+runs of preprocessor, feature-eng, feature-extractor and predictor through the
+new hosts. Twelve outcomes and 119 metrics reconciled in the
+[four-consumer check](https://github.com/harveybc/predictor/blob/master/docs/handoffs/MUSASHI_SYNTHETIC_CATALOG_AND_FOUR_CONSUMERS_ACCEPTANCE_2026_09_14.md).
+This does not certify fit/transform causality or finish offline DOIN adoption.
+
 A **lake** keeps native files interpreted on read. A **warehouse** exposes
 structured tables and views with defined schemas. Both can be local or remote;
 neither requires a cloud provider. `kind` describes the store, `engine` its
