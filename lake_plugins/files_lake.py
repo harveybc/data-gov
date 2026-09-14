@@ -13,6 +13,17 @@ from pathlib import Path
 
 from lake_plugins.errors import UnsupportedError
 
+import pandas as _pd
+
+# pandas 3.0.3 + pyarrow 25 on this stack: the default pyarrow-backed string
+# storage segfaults inside pandas' string_arrow._from_sequence on the second
+# read_csv issued from a werkzeug worker thread (governed download after a
+# streamed delivery; predictor evidence flow_v3_tools/p03_*). The same reads in
+# plain threads or in the main thread never fault. Python storage is exact for
+# the only string data these paths build (column labels, ISO timestamps) and
+# removes the fault; it is set once at import, before any frame is built.
+_pd.set_option("mode.string_storage", "python")
+
 CHUNK = 1024 * 1024
 CSV_ROWS_PER_CHUNK = 65536
 DAY_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
