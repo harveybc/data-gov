@@ -25,14 +25,36 @@ so no financial-lake resource is consumed by a campaign today.
 ## 2. Installed entries (`examples/config/default.json`, lake `predictor_examples`)
 
 Identical for the three resources; canonical digest
-`4d0ead37c2e471faced996f7b065eb2c5327be00c26a3861cf53171caaf72821`
-(`sha256(json.dumps(contract, sort_keys=True, separators=(",", ":")))`, the
-value the lake returns in `X-Availability-Contract-SHA256`).
+`5a521473f80a65ef` … (full value in `p02_validate_contracts.n2.out`;
+`sha256(json.dumps(contract, sort_keys=True, separators=(",", ":")))`, the value
+the lake returns in `X-Availability-Contract-SHA256`). The first installation
+(`4d0ead37…`, without the `availability` block) is superseded by GOV-N2.
 
 ```json
 {"event_time_column": "DATE_TIME", "available_time_column": "DATE_TIME",
- "timezone": "NAIVE_WALL_CLOCK", "time_unit": null, "frequency": "4h"}
+ "timezone": "NAIVE_WALL_CLOCK", "time_unit": null, "frequency": "4h",
+ "availability": {"label": "WINDOW_END", "completion_lag_max": "1h",
+                  "timezone_evidence": "UNKNOWN", "use_class": "OFFLINE_DAY_GRANULAR"}}
 ```
+
+The `availability` block (GOV-N2) publishes four facts separately, and the lake
+executes them rather than noting them:
+
+| fact | value here | executed as |
+|---|---|---|
+| what the available-time label denotes | `WINDOW_END` — the 4h value at `t` is the mean of hourly rows in `(t−4h, t]` (§3) | header `X-Availability-Label` |
+| completion bound | `1h` — the information is complete no later than `t + 1h` (hourly label semantics unproven) | a day cut keeps a row only when `t + 1h < range end`; an AS_IS delivery under holdout needs `max(t) + 1h < holdout`; header `X-Availability-Completion-Lag-Max` |
+| time-zone evidence | `UNKNOWN` (no producer statement; `NAIVE_WALL_CLOCK`) | header `X-Timezone-Evidence` |
+| use class | `OFFLINE_DAY_GRANULAR` — ranges are calendar days, never intrabar (`from`/`to` with a time part are refused) | header `X-Availability-Use`; consumers record it per input and tag the terminal `availability_use` |
+
+`LIVE_EQUIVALENT` is only accepted with a known label, zero completion lag and
+a producer time-zone statement — none of the three resources qualifies. Tests:
+`data-gov/tests/unit/test_availability_scope.py` (scope validation, completion
+lag excluding a 23:30 row from the cut of its day, interval extremes, incomplete
+days, intrabar refusal, train/calibration/confirmation partitions with an altered
+future observation leaving every cut byte-identical, holdout with the bound) and
+`financial-data/lake/tests/test_availability_scope_v2.py` (same rule and headers
+on the financial lake).
 
 Physical identity of the resources (bytes served `AS_IS`):
 

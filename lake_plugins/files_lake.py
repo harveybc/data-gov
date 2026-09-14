@@ -43,6 +43,69 @@ class HoldoutError(ValueError):
     pass
 
 
+# Availability scope of a resource contract (optional `availability` block). It says
+# separately what the available-time label denotes, how long after that label the
+# information is complete at the latest, whether the time zone is evidenced, and the
+# use the resource is fit for. The lake enforces it: a cut keeps a row only when
+# `label + completion_lag_max < range end`, an AS_IS delivery under holdout needs
+# `max(label) + completion_lag_max < holdout`, and ranges are calendar days.
+AVAILABILITY_LABELS = {"WINDOW_END", "WINDOW_START", "EVENT_INSTANT", "UNKNOWN"}
+AVAILABILITY_USE = {"OFFLINE_DAY_GRANULAR", "LIVE_EQUIVALENT"}
+TIMEZONE_EVIDENCE = {"PRODUCER_STATEMENT", "UNKNOWN"}
+UNDECLARED_SCOPE = {"label": "UNKNOWN", "completion_lag_max": None,
+                    "timezone_evidence": "UNKNOWN", "use_class": "UNDECLARED"}
+
+
+def availability_scope(block) -> dict:
+    """Validate an `availability` block; returns it with `completion_lag` as a Timedelta."""
+    import pandas as pd
+
+    keys = {"label", "completion_lag_max", "timezone_evidence", "use_class"}
+    if not isinstance(block, dict) or set(block) != keys:
+        raise UnsupportedError("invalid resource contract availability")
+    if block["label"] not in AVAILABILITY_LABELS:
+        raise UnsupportedError("invalid resource contract availability label")
+    if block["timezone_evidence"] not in TIMEZONE_EVIDENCE:
+        raise UnsupportedError("invalid resource contract timezone_evidence")
+    if block["use_class"] not in AVAILABILITY_USE:
+        raise UnsupportedError("invalid resource contract use_class")
+    lag = block["completion_lag_max"]
+    if lag is None:
+        raise UnsupportedError("resource contract availability needs completion_lag_max")
+    try:
+        delta = pd.Timedelta(str(lag))
+    except ValueError as exc:
+        raise UnsupportedError("invalid resource contract completion_lag_max") from exc
+    if pd.isna(delta) or delta < pd.Timedelta(0):
+        raise UnsupportedError("invalid resource contract completion_lag_max")
+    if block["use_class"] == "LIVE_EQUIVALENT" and (
+        delta != pd.Timedelta(0) or block["label"] == "UNKNOWN"
+        or block["timezone_evidence"] != "PRODUCER_STATEMENT"
+    ):
+        raise UnsupportedError(
+            "LIVE_EQUIVALENT needs a known label, zero completion lag and a producer time-zone statement"
+        )
+    return dict(block, completion_lag=delta)
+
+
+def scope_of(contract) -> dict:
+    """The scope a delivery publishes (headers, receipts): declared block or UNDECLARED."""
+    block = contract.get("availability")
+    if block is None:
+        return dict(UNDECLARED_SCOPE)
+    scope = availability_scope(block)
+    return {"label": scope["label"], "completion_lag_max": str(block["completion_lag_max"]),
+            "timezone_evidence": scope["timezone_evidence"], "use_class": scope["use_class"]}
+
+
+def completion_lag(contract):
+    """Timedelta added to the label before comparing with a range end or the holdout; zero when undeclared."""
+    import pandas as pd
+
+    block = contract.get("availability")
+    return availability_scope(block)["completion_lag"] if block is not None else pd.Timedelta(0)
+
+
 def sha256_file(path, chunk=CHUNK) -> str:
     digest = hashlib.sha256()
     with open(path, "rb") as fh:
@@ -358,7 +421,7 @@ class Plugin:
         required = {
             "event_time_column", "available_time_column", "timezone", "time_unit", "frequency"
         }
-        if not isinstance(contract, dict) or set(contract) != required:
+        if not isinstance(contract, dict) or set(contract) - {"availability"} != required:
             raise UnsupportedError("resource availability contract required")
         for key in ("event_time_column", "available_time_column", "timezone", "frequency"):
             if not isinstance(contract[key], str) or not contract[key]:
@@ -369,6 +432,8 @@ class Plugin:
             "s", "ms", "us", "ns"
         }:
             raise UnsupportedError("invalid resource contract time_unit")
+        if "availability" in contract:
+            availability_scope(contract["availability"])
         return contract
 
     # download ----------------------------------------------------------
@@ -377,9 +442,10 @@ class Plugin:
         return self._download(resource_id, start, end)
 
     def _download(self, resource_id: str, start=None, end=None, *, explicit_col=None,
-                  time_unit=None, timezone_mode=None, contract_digest=None):
+                  time_unit=None, timezone_mode=None, contract_digest=None, lag=None):
         import pandas as pd
 
+        lag = pd.Timedelta(0) if lag is None else lag
         path = self._path(resource_id)
         holdout = self._holdout()
         untimed = resource_id in (self.params.get("untimed") or [])
@@ -395,7 +461,7 @@ class Plugin:
                     if col is None:
                         raise PermissionError("no time column under holdout")
                     t_max = self._t_max_contract(path, col, time_unit, timezone_mode)
-                    if t_max is not None and not t_max < holdout:
+                    if t_max is not None and not t_max + lag < holdout:
                         raise PermissionError("spans holdout: request a range")
             return self._result(path, path.name, source_sha256, "AS_IS", col)
         if start is None or end is None:
@@ -429,11 +495,11 @@ class Plugin:
         target_existed = target.exists()
         if suffix == ".parquet":
             written = self._cut_parquet(
-                path, col, lo, hi, target, holdout, time_unit, timezone_mode
+                path, col, lo, hi, target, holdout, time_unit, timezone_mode, lag
             )
         else:
             written = self._cut_csv(
-                path, col, lo, hi, target, holdout, time_unit, timezone_mode
+                path, col, lo, hi, target, holdout, time_unit, timezone_mode, lag
             )
         if self._file_sha256(path) != source_sha256:
             if not target_existed:
@@ -480,8 +546,9 @@ class Plugin:
             resource_id, start, end,
             explicit_col=contract["available_time_column"],
             time_unit=contract["time_unit"], timezone_mode=contract["timezone"],
-            contract_digest=contract_sha256,
+            contract_digest=contract_sha256, lag=completion_lag(contract),
         )
+        info["availability"] = scope_of(contract)
         path = Path(info["path"])
         fd = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
         try:
@@ -548,17 +615,19 @@ class Plugin:
             tmp.unlink(missing_ok=True)
 
     def _cut_csv(self, path, col, lo, hi, target, holdout,
-                 time_unit=None, timezone_mode=None) -> bool:
+                 time_unit=None, timezone_mode=None, lag=None) -> bool:
         import numpy as np
         import pandas as pd
 
+        lag = pd.Timedelta(0) if lag is None else lag
         masks = []
         kept_max = None
         for chunk in pd.read_csv(path, usecols=[col], chunksize=CSV_ROWS_PER_CHUNK):
             times = self._wall_clock(
                 chunk[col], time_unit=time_unit, timezone_mode=timezone_mode
             )
-            mask = (times >= lo) & (times < hi)
+            # a row is delivered only when its information is complete before the range end
+            mask = (times >= lo) & (times + lag < hi)
             masks.append(mask.to_numpy())
             if mask.any():
                 m = times[mask].max()
@@ -566,7 +635,7 @@ class Plugin:
         keep = np.concatenate(masks) if masks else np.zeros(0, dtype=bool)
         if keep.all():
             return False
-        self._assert_holdout(kept_max, holdout)
+        self._assert_holdout(None if kept_max is None else kept_max + lag, holdout)
         tmp = self._tmp_for(target)
         index = 0
         try:
@@ -590,10 +659,12 @@ class Plugin:
         return True
 
     def _cut_parquet(self, path, col, lo, hi, target, holdout,
-                     time_unit=None, timezone_mode=None) -> bool:
+                     time_unit=None, timezone_mode=None, lag=None) -> bool:
+        import pandas as pd
         import pyarrow as pa
         import pyarrow.parquet as pq
 
+        lag = pd.Timedelta(0) if lag is None else lag
         pf = pq.ParquetFile(path)
         kept_max = None
         removed = False
@@ -607,7 +678,7 @@ class Plugin:
                         batch.column(column_index).to_pandas(),
                         time_unit=time_unit, timezone_mode=timezone_mode,
                     )
-                    mask = ((times >= lo) & (times < hi)).to_numpy()
+                    mask = ((times >= lo) & (times + lag < hi)).to_numpy()
                     if not mask.all():
                         removed = True
                     if not mask.any():
@@ -623,7 +694,7 @@ class Plugin:
             if not removed:
                 tmp.unlink(missing_ok=True)
                 return False
-            self._assert_holdout(kept_max, holdout)
+            self._assert_holdout(None if kept_max is None else kept_max + lag, holdout)
         except BaseException:
             tmp.unlink(missing_ok=True)
             raise

@@ -241,6 +241,12 @@ class Plugin:
             "delivery": response.header("X-Delivery"),
             "time_column": response.header("X-Time-Column") or "",
             "availability_contract_sha256": contract_sha,
+            "availability": {
+                "label": response.header("X-Availability-Label") or "UNKNOWN",
+                "completion_lag_max": response.header("X-Availability-Completion-Lag-Max") or None,
+                "timezone_evidence": response.header("X-Timezone-Evidence") or "UNKNOWN",
+                "use_class": response.header("X-Availability-Use") or "UNDECLARED",
+            },
             "spool": True,
         }
 

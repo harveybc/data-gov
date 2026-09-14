@@ -774,6 +774,15 @@ class Plugin:
                 response.headers["X-Availability-Contract-SHA256"] = str(
                     info.get("availability_contract_sha256") or ""
                 )
+                # the scope of the contract, published separately: what the label denotes,
+                # the completion bound, the time-zone evidence and the use class
+                scope = info.get("availability") or {}
+                response.headers["X-Availability-Label"] = str(scope.get("label") or "UNKNOWN")
+                response.headers["X-Availability-Completion-Lag-Max"] = str(
+                    scope.get("completion_lag_max") if scope.get("completion_lag_max") is not None else ""
+                )
+                response.headers["X-Timezone-Evidence"] = str(scope.get("timezone_evidence") or "UNKNOWN")
+                response.headers["X-Availability-Use"] = str(scope.get("use_class") or "UNDECLARED")
                 response.headers["X-Delivery-ID"] = delivery_id
                 response.headers["X-Campaign-SHA256"] = campaign_sha
                 handed_off = True

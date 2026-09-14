@@ -118,21 +118,39 @@
           "available_time_column": "DATE_TIME",
           "timezone": "NAIVE_WALL_CLOCK",
           "time_unit": null,
-          "frequency": "4h"
+          "frequency": "4h",
+          "availability": {
+            "label": "WINDOW_END",
+            "completion_lag_max": "1h",
+            "timezone_evidence": "UNKNOWN",
+            "use_class": "OFFLINE_DAY_GRANULAR"
+          }
         },
         "phase_1/normalized_d5.csv": {
           "event_time_column": "DATE_TIME",
           "available_time_column": "DATE_TIME",
           "timezone": "NAIVE_WALL_CLOCK",
           "time_unit": null,
-          "frequency": "4h"
+          "frequency": "4h",
+          "availability": {
+            "label": "WINDOW_END",
+            "completion_lag_max": "1h",
+            "timezone_evidence": "UNKNOWN",
+            "use_class": "OFFLINE_DAY_GRANULAR"
+          }
         },
         "phase_1/normalized_d6.csv": {
           "event_time_column": "DATE_TIME",
           "available_time_column": "DATE_TIME",
           "timezone": "NAIVE_WALL_CLOCK",
           "time_unit": null,
-          "frequency": "4h"
+          "frequency": "4h",
+          "availability": {
+            "label": "WINDOW_END",
+            "completion_lag_max": "1h",
+            "timezone_evidence": "UNKNOWN",
+            "use_class": "OFFLINE_DAY_GRANULAR"
+          }
         }
       }
     }

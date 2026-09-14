@@ -467,7 +467,8 @@ def run(spec: dict, client: DataGovClient, out_dir, cache_dir, outbox_dir, *, ru
             delivery_ids.append(info["delivery_id"])
             state.setdefault("inputs", []).append({"role": item["role"], **{k: info.get(k) for k in (
                 "lake", "resource", "path", "sha256", "bytes", "cached", "source_sha256", "delivery",
-                "time_column", "availability_contract_sha256", "delivery_id", "verification_state",
+                "time_column", "availability_contract_sha256", "availability_use", "availability_label",
+                "availability_completion_lag_max", "timezone_evidence", "delivery_id", "verification_state",
                 "range_from", "range_to")}})
         gcfg = dict(spec["config"])
         for key, role in spec["input_keys"].items():
@@ -510,7 +511,11 @@ def run(spec: dict, client: DataGovClient, out_dir, cache_dir, outbox_dir, *, ru
         "costs": {"wall_seconds": max(0.0, time.monotonic() - wall_start)},
         "deliveries": delivery_ids, "artifacts": artifacts,
         "metrics": metrics if terminal_status == "COMPLETED" else [],
-        "tags": {**spec["tags"], "exit_code": str(state.get("exit_code", ""))},
+        "tags": {**spec["tags"], "exit_code": str(state.get("exit_code", "")),
+                 # the weakest availability scope among the inputs bounds what the result may claim
+                 "availability_use": ",".join(sorted({
+                     str(item.get("availability_use") or "UNDECLARED") for item in state.get("inputs", [])
+                 })) or "NONE"},
     }
     envelope = {"campaign_sha256": campaign_sha256, "unit_id": unit, "terminal": terminal}
     item = outbox.put(envelope)
