@@ -8,14 +8,15 @@ import pytest
 
 from app.outbox import TerminalOutbox
 from lake_plugins.files_lake import Plugin as FilesLake
-from tests.conftest import LAB_EARLY
+from tests.conftest import LAB_EARLY, write_lab_files
 
 
 def _sha(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-def test_same_size_same_mtime_rewrite_is_rehashed(tmp_path, root):
+def test_same_size_same_mtime_rewrite_is_rehashed(tmp_path):
+    root = write_lab_files(tmp_path / "source")
     lake = FilesLake()
     lake.set_params(
         root_path=str(root), include_globs=["**/*.csv"],

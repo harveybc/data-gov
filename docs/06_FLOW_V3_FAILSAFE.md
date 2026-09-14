@@ -20,6 +20,7 @@ non-governing compatibility API.
 | GOV-010 | Governing code has an exact clean identity; unidentified code is non-governing. |
 | GOV-011 | The cube is written only by a configured lake adapter and contains all terminal states. |
 | GOV-012 | Reconciliation detects missing cube/accounting records without deleting or inventing evidence. |
+| GOV-013 | A governing run uses a fresh output namespace and never overwrites prior scientific artifacts. |
 
 ## Use cases
 
@@ -45,8 +46,10 @@ request and terminal destination; no person approves individual runs.
 
 ### Deliver data
 
-`GET /api/v2/download` requires `X-Campaign-SHA256`, optional `X-Unit-ID`, and
+`GET /api/v2/download` requires `X-Campaign-SHA256`, `X-Unit-ID`, and
 an exact declared role/resource/range. The response contains `X-Delivery-ID`.
+It also carries the delivered/source hashes, available-time column and the
+digest of the availability contract used by the lake.
 The initial state is `AUTHORIZED`, which grants no lineage.
 
 `POST /api/v2/deliveries/<delivery_id>/confirm` follows client-side hashing and
@@ -57,8 +60,10 @@ a terminal.
 
 `POST /api/v2/campaigns/<campaign_sha256>/units/<unit_id>/terminal` accepts an
 exact `governed_terminal.v1` body. Metrics may be empty. Dataset lineage is a
-list of verified delivery IDs. The terminal lake stores it transactionally;
-the accounting database records the same digest after the lake response.
+list of verified delivery IDs. Data-gov resolves those IDs to their complete
+verified delivery evidence and includes that evidence in `terminal_sha256`.
+The terminal lake stores the full record transactionally; the accounting
+database records the same digest after the lake response.
 
 ### Reconcile
 
@@ -72,6 +77,9 @@ There are no remote calls inside `fit`, `transform`, `step`, `learn`, a batch
 or a gradient update. Control operations scale with unique datasets and run
 units, not observations. Terminal clients use a durable local outbox and batch
 retry; a temporary reporting outage does not change scientific computation.
+CSV and Parquet temporal cuts are processed in bounded batches. The data
+inventory and holdout configuration are immutable while a lake service is
+running, and the cut-materializer identity is part of the cut path.
 
 ## Role of repositories
 
@@ -79,7 +87,8 @@ retry; a temporary reporting outage does not change scientific computation.
 - `preprocessor` and `feature-eng` publish derived artifacts with parent and
   operator identities.
 - `predictor`, `agent-multi` and strategy runners consume receipts and produce
-  terminals.
+  terminals. Their governing runners use fresh output directories; a mechanics
+  run outside this path cannot promote a scientific result.
 - DOIN converts ledger events into the same terminal schema.
 - data-gov authorizes and records; its configured adapter writes the local or
   remote OLAP. Experiments never receive database write credentials.

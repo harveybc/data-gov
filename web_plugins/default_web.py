@@ -24,6 +24,14 @@ from flask import (
 )
 
 from app.report import canonical_body, canonical_json, report_sha256
+from app.governance import (
+    HEX64_RE as GOV_HEX64_RE,
+    canonical_json as governance_json,
+    object_sha256 as governance_sha256,
+    normalise_campaign,
+    normalise_confirmation,
+    normalise_terminal,
+)
 from lake_plugins.errors import UnsupportedError
 
 CHUNK = 1024 * 1024
@@ -612,6 +620,304 @@ class Plugin:
             finally:
                 if not handed_off:
                     slots.release()
+
+        def _campaign_for_request(campaign_sha256, actor):
+            if not isinstance(campaign_sha256, str) or not GOV_HEX64_RE.fullmatch(
+                campaign_sha256
+            ):
+                return None, (json_error(400, "invalid campaign_sha256"))
+            campaign = plugins()["accounting"].campaign(campaign_sha256)
+            if campaign is None:
+                return None, json_error(404, "unknown campaign")
+            if campaign["actor"] != actor:
+                return None, json_error(403, "campaign belongs to another actor")
+            return campaign, None
+
+        @app.route("/api/v2/campaigns", methods=["POST"])
+        def api_v2_campaigns():
+            principal, err = _service_or_401()
+            if err:
+                return err
+            actor = principal["username"]
+            payload = request.get_json(silent=True)
+            try:
+                campaign = normalise_campaign(payload, actor, plugins()["lakes"])
+            except ValueError as exc:
+                return json_error(400, str(exc))
+            access = plugins()["access"]
+            for dataset in campaign["datasets"]:
+                ok, reason = access.authorize(
+                    principal, dataset["lake"], "download",
+                    start=dataset["from"], end=dataset["to"],
+                )
+                if not ok:
+                    return json_error(403, reason or "dataset forbidden")
+            ok, reason = access.authorize(
+                principal, campaign["terminal_lake"], "write_terminal"
+            )
+            if not ok:
+                return json_error(403, reason or "terminal lake forbidden")
+            lake = plugins()["lakes"][campaign["terminal_lake"]]
+            if not hasattr(lake, "write_terminal"):
+                return json_error(400, "terminal lake does not store terminals")
+            try:
+                stored = plugins()["accounting"].register_campaign(
+                    campaign, governance_json(campaign)
+                )
+            except ValueError as exc:
+                return json_error(409, str(exc))
+            plugins()["accounting"].record(
+                actor=actor, lake_id=campaign["terminal_lake"], verb="campaign_submit",
+                resource_id=campaign["campaign_key"], decision="allow",
+                sha256=campaign["campaign_sha256"], experiment_key=campaign["campaign_key"],
+            )
+            return jsonify({
+                "campaign_sha256": campaign["campaign_sha256"],
+                "stored": bool(stored), "already_stored": not stored,
+                "classification": campaign["classification"],
+            }), (201 if stored else 200)
+
+        @app.route("/api/v2/download")
+        def api_v2_download():
+            principal, err = _service_or_401()
+            if err:
+                return err
+            actor = principal["username"]
+            campaign_sha = request.headers.get("X-Campaign-SHA256")
+            unit_id = request.headers.get("X-Unit-ID")
+            campaign, err = _campaign_for_request(campaign_sha, actor)
+            if err:
+                return err
+            if not unit_id or unit_id not in campaign["units"]:
+                return json_error(403, "unit is not declared by campaign")
+            lake_id = request.args.get("lake")
+            resource = request.args.get("resource")
+            role = request.args.get("role")
+            start = request.args.get("from")
+            end = request.args.get("to")
+            declared = next((item for item in campaign["datasets"] if (
+                item["lake"], item["resource"], item["role"], item["from"], item["to"]
+            ) == (lake_id, resource, role, start, end)), None)
+            if declared is None:
+                return json_error(403, "dataset request is not declared by campaign")
+            ok, reason = plugins()["access"].authorize(
+                principal, lake_id, "download", start=start, end=end
+            )
+            if not ok:
+                return json_error(403, reason or "forbidden")
+            lake = plugins()["lakes"].get(lake_id)
+            if lake is None or not hasattr(lake, "governed_download"):
+                return json_error(422, "lake has no governing delivery contract")
+            if not plugin._slots.acquire(blocking=False):
+                response = jsonify({"error": "download slots busy"})
+                response.headers["Retry-After"] = RETRY_AFTER
+                return response, 503
+            handed_off = False
+            try:
+                try:
+                    info = lake.governed_download(resource, start=start, end=end)
+                except PermissionError as exc:
+                    return json_error(403, str(exc) or "holdout")
+                except FileNotFoundError:
+                    return json_error(404, "unknown resource")
+                except ValueError as exc:
+                    return json_error(400, str(exc))
+                except UnsupportedError as exc:
+                    return json_error(422, str(exc))
+                except RuntimeError as exc:
+                    return json_error(503, str(exc))
+                handle = info.get("handle")
+                if handle is None:
+                    return json_error(503, "lake returned no retained descriptor")
+                contract_sha256 = info.get("availability_contract_sha256")
+                if not isinstance(contract_sha256, str) or not GOV_HEX64_RE.fullmatch(
+                    contract_sha256
+                ):
+                    handle.close()
+                    return json_error(503, "lake returned no availability contract identity")
+                delivery_id = plugins()["accounting"].create_delivery(
+                    campaign_sha256=campaign_sha, unit_id=unit_id, actor=actor,
+                    lake_id=lake_id, resource_id=resource, role=role,
+                    range_from=start, range_to=end, sha256=info["sha256"],
+                    bytes_count=info["bytes"], source_sha256=info.get("source_sha256"),
+                    delivery_kind=info.get("delivery"), time_column=info.get("time_column"),
+                    availability_contract_sha256=contract_sha256,
+                )
+                released = threading.Event()
+
+                def release_v3():
+                    if not released.is_set():
+                        released.set()
+                        handle.close()
+                        plugin._slots.release()
+
+                def body_v3():
+                    try:
+                        while True:
+                            chunk = handle.read(CHUNK)
+                            if not chunk:
+                                break
+                            yield chunk
+                    finally:
+                        release_v3()
+
+                response = Response(
+                    body_v3(), mimetype="application/octet-stream", direct_passthrough=True
+                )
+                response.call_on_close(release_v3)
+                response.headers["Content-Length"] = str(info["bytes"])
+                response.headers["X-Content-SHA256"] = info["sha256"]
+                response.headers["X-Source-SHA256"] = str(info.get("source_sha256") or "")
+                response.headers["X-Delivery"] = str(info.get("delivery") or "")
+                response.headers["X-Time-Column"] = str(info.get("time_column") or "")
+                response.headers["X-Availability-Contract-SHA256"] = str(
+                    info.get("availability_contract_sha256") or ""
+                )
+                response.headers["X-Delivery-ID"] = delivery_id
+                response.headers["X-Campaign-SHA256"] = campaign_sha
+                handed_off = True
+                return response
+            finally:
+                if not handed_off:
+                    plugin._slots.release()
+
+        @app.route("/api/v2/deliveries/<delivery_id>/confirm", methods=["POST"])
+        def api_v2_confirm_delivery(delivery_id):
+            principal, err = _service_or_401()
+            if err:
+                return err
+            actor = principal["username"]
+            campaign_sha = request.headers.get("X-Campaign-SHA256")
+            _, err = _campaign_for_request(campaign_sha, actor)
+            if err:
+                return err
+            try:
+                confirmation = normalise_confirmation(request.get_json(silent=True))
+                state, stored = plugins()["accounting"].confirm_delivery(
+                    delivery_id, campaign_sha256=campaign_sha, actor=actor,
+                    sha256=confirmation["sha256"], bytes_count=confirmation["bytes"],
+                    cached=confirmation["cached"],
+                )
+            except ValueError as exc:
+                return json_error(400, str(exc))
+            except LookupError as exc:
+                return json_error(404, str(exc))
+            except PermissionError as exc:
+                return json_error(403, str(exc))
+            except RuntimeError as exc:
+                return json_error(409, str(exc))
+            plugins()["accounting"].record(
+                actor=actor, verb="delivery_verified", resource_id=delivery_id,
+                decision="allow", sha256=confirmation["sha256"],
+                experiment_key=campaign_sha, warning=("cache" if confirmation["cached"] else None),
+            )
+            return jsonify({"delivery_id": delivery_id, "state": state,
+                            "stored": stored, "already_stored": not stored})
+
+        @app.route(
+            "/api/v2/campaigns/<campaign_sha>/units/<unit_id>/terminal", methods=["POST"]
+        )
+        def api_v2_terminal(campaign_sha, unit_id):
+            principal, err = _service_or_401()
+            if err:
+                return err
+            actor = principal["username"]
+            if request.headers.get("X-Campaign-SHA256") != campaign_sha:
+                return json_error(400, "campaign header mismatch")
+            campaign, err = _campaign_for_request(campaign_sha, actor)
+            if err:
+                return err
+            if unit_id not in campaign["units"] or request.headers.get("X-Unit-ID") != unit_id:
+                return json_error(403, "unit is not declared by campaign")
+            try:
+                terminal = normalise_terminal(
+                    request.get_json(silent=True), campaign, unit_id, actor
+                )
+            except ValueError as exc:
+                return json_error(400, str(exc))
+            try:
+                deliveries = plugins()["accounting"].verified_deliveries(
+                    terminal["deliveries"], campaign_sha256=campaign_sha,
+                    actor=actor, unit_id=unit_id,
+                )
+            except ValueError as exc:
+                return json_error(422, str(exc))
+            except PermissionError as exc:
+                return json_error(403, str(exc))
+            if terminal["status"] == "COMPLETED" and campaign["input_mode"] == "DATASETS":
+                got = {(item["lake_id"], item["resource_id"], item["role"],
+                        item["range_from"], item["range_to"]) for item in deliveries}
+                required = {(item["lake"], item["resource"], item["role"],
+                             item["from"], item["to"]) for item in campaign["datasets"]}
+                if not required.issubset(got):
+                    return json_error(422, "completed terminal lacks verified campaign data")
+            terminal["verified_datasets"] = [{
+                key: item[key]
+                for key in (
+                    "delivery_id", "lake_id", "resource_id", "role", "sha256",
+                    "bytes", "source_sha256", "range_from", "range_to",
+                    "delivery_kind", "time_column", "state",
+                    "availability_contract_sha256",
+                )
+            } for item in deliveries]
+            terminal["terminal_sha256"] = governance_sha256(terminal)
+            existing = plugins()["accounting"].terminal_slot(
+                campaign_sha, unit_id, terminal["generation"]
+            )
+            if existing:
+                if existing["terminal_sha256"] != terminal["terminal_sha256"]:
+                    return json_error(409, "terminal generation conflict")
+                return jsonify({"terminal_sha256": terminal["terminal_sha256"],
+                                "stored": False, "already_stored": True}), 200
+            lake = plugins()["lakes"][campaign["terminal_lake"]]
+            try:
+                outcome = lake.write_terminal(terminal)
+                plugins()["accounting"].record_terminal(
+                    terminal, governance_json(terminal)
+                )
+            except ValueError as exc:
+                return json_error(400, str(exc))
+            except RuntimeError as exc:
+                return json_error(409, str(exc))
+            except Exception as exc:
+                return json_error(503, f"terminal lake unreachable: {exc}")
+            plugins()["accounting"].record(
+                actor=actor, lake_id=campaign["terminal_lake"], verb="write_terminal",
+                resource_id=f"campaign/{campaign_sha}/unit/{unit_id}", decision="allow",
+                sha256=terminal["terminal_sha256"], experiment_key=campaign["campaign_key"],
+            )
+            return jsonify({
+                "terminal_sha256": terminal["terminal_sha256"],
+                "stored": bool(outcome.get("stored")),
+                "already_stored": bool(outcome.get("already_stored")),
+            }), (201 if outcome.get("stored") else 200)
+
+        @app.route("/api/v2/campaigns/<campaign_sha>/reconcile")
+        def api_v2_reconcile(campaign_sha):
+            principal, err = _service_or_401()
+            if err:
+                return err
+            actor = principal["username"]
+            campaign, err = _campaign_for_request(campaign_sha, actor)
+            if err:
+                return err
+            accounting_rows = plugins()["accounting"].terminal_digests(campaign_sha)
+            lake = plugins()["lakes"][campaign["terminal_lake"]]
+            if not hasattr(lake, "terminal_digests"):
+                return json_error(503, "terminal lake cannot reconcile")
+            try:
+                lake_rows = lake.terminal_digests(campaign_sha)
+            except Exception as exc:
+                return json_error(503, f"terminal lake unreachable: {exc}")
+            accounting_set = {row["terminal_sha256"] for row in accounting_rows}
+            lake_set = {row["terminal_sha256"] for row in lake_rows}
+            terminal_units = {row["unit_id"] for row in accounting_rows}
+            return jsonify({
+                "campaign_sha256": campaign_sha,
+                "missing_units": sorted(set(campaign["units"]) - terminal_units),
+                "accounting_only": sorted(accounting_set - lake_set),
+                "lake_only": sorted(lake_set - accounting_set),
+            })
 
         def _hash_handle(handle):
             import hashlib

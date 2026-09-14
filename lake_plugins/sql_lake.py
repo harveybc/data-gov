@@ -37,6 +37,72 @@ DDL = (
     )
     """,
     """
+    CREATE TABLE IF NOT EXISTS gov_terminal (
+        terminal_sha256 TEXT PRIMARY KEY,
+        campaign_sha256 TEXT NOT NULL,
+        campaign_key TEXT NOT NULL,
+        unit_id TEXT NOT NULL,
+        generation INTEGER NOT NULL,
+        actor TEXT NOT NULL,
+        project TEXT NOT NULL,
+        classification TEXT NOT NULL,
+        status TEXT NOT NULL,
+        reason TEXT,
+        started_at TEXT NOT NULL,
+        finished_at TEXT NOT NULL,
+        terminal_lake TEXT NOT NULL,
+        config_sha256 TEXT NOT NULL,
+        code_identity_json TEXT NOT NULL,
+        costs_json TEXT NOT NULL,
+        tags_json TEXT NOT NULL,
+        synthetic_spec_sha256 TEXT,
+        received_at TEXT NOT NULL,
+        UNIQUE(campaign_sha256, unit_id, generation)
+    )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS gov_terminal_metric (
+        terminal_sha256 TEXT NOT NULL,
+        metric TEXT NOT NULL,
+        split TEXT,
+        horizon INTEGER,
+        unit TEXT,
+        value DOUBLE PRECISION,
+        std_dev DOUBLE PRECISION,
+        min_value DOUBLE PRECISION,
+        max_value DOUBLE PRECISION
+    )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS gov_terminal_dataset (
+        terminal_sha256 TEXT NOT NULL,
+        delivery_id TEXT NOT NULL,
+        lake_id TEXT NOT NULL,
+        resource_id TEXT NOT NULL,
+        role TEXT NOT NULL,
+        sha256 TEXT NOT NULL,
+        bytes INTEGER NOT NULL,
+        source_sha256 TEXT,
+        range_from TEXT,
+        range_to TEXT,
+        delivery_kind TEXT,
+        time_column TEXT,
+        availability_contract_sha256 TEXT,
+        verification_state TEXT NOT NULL
+    )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS gov_terminal_artifact (
+        terminal_sha256 TEXT NOT NULL,
+        role TEXT NOT NULL,
+        sha256 TEXT NOT NULL,
+        bytes INTEGER NOT NULL
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS ix_gov_terminal_campaign ON gov_terminal(campaign_sha256)",
+    "CREATE INDEX IF NOT EXISTS ix_gov_terminal_metric_sha ON gov_terminal_metric(terminal_sha256)",
+    "CREATE INDEX IF NOT EXISTS ix_gov_terminal_dataset_sha ON gov_terminal_dataset(sha256)",
+    """
     CREATE TABLE IF NOT EXISTS gov_metric (
         report_sha256 TEXT NOT NULL,
         experiment_key TEXT NOT NULL,
@@ -131,6 +197,14 @@ class Plugin:
             conn.execute("PRAGMA journal_mode=WAL")
             for statement in DDL:
                 conn.execute(statement)
+            columns = {
+                row[1] for row in conn.execute("PRAGMA table_info(gov_terminal_dataset)")
+            }
+            if "availability_contract_sha256" not in columns:
+                conn.execute(
+                    "ALTER TABLE gov_terminal_dataset "
+                    "ADD COLUMN availability_contract_sha256 TEXT"
+                )
         finally:
             conn.close()
 
@@ -278,6 +352,104 @@ class Plugin:
         finally:
             conn.close()
         return {"stored": True, "already_stored": False, "lineage": lineage}
+
+    def write_terminal(self, terminal: dict):
+        """Store one canonical Flow-v3 terminal and its verified lineage."""
+        from app.governance import canonical_json, object_sha256
+
+        body = {
+            key: value
+            for key, value in terminal.items()
+            if key != "terminal_sha256"
+        }
+        digest = object_sha256(body)
+        if terminal.get("terminal_sha256") != digest:
+            raise ValueError("terminal_sha256 mismatch")
+        datasets = terminal.get("verified_datasets") or []
+        conn = self._connect(create=True)
+        try:
+            with conn:
+                existing = conn.execute(
+                    "SELECT terminal_sha256 FROM gov_terminal WHERE campaign_sha256 = ? "
+                    "AND unit_id = ? AND generation = ?",
+                    (terminal["campaign_sha256"], terminal["unit_id"], terminal["generation"]),
+                ).fetchone()
+                if existing:
+                    if existing["terminal_sha256"] != digest:
+                        raise ValueError("terminal generation conflict")
+                    return {"stored": False, "already_stored": True,
+                            "terminal_sha256": digest}
+                conn.execute(
+                    """
+                    INSERT INTO gov_terminal (
+                        terminal_sha256, campaign_sha256, campaign_key, unit_id, generation,
+                        actor, project, classification, status, reason, started_at, finished_at,
+                        terminal_lake, config_sha256, code_identity_json, costs_json, tags_json,
+                        synthetic_spec_sha256, received_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        digest, terminal["campaign_sha256"], terminal["campaign_key"],
+                        terminal["unit_id"], terminal["generation"], terminal["actor"],
+                        terminal["project"], terminal["classification"], terminal["status"],
+                        terminal["reason"], terminal["started_at"], terminal["finished_at"],
+                        terminal["terminal_lake"], terminal["config_sha256"],
+                        canonical_json(terminal["code_identity"]), canonical_json(terminal["costs"]),
+                        canonical_json(terminal["tags"]), terminal.get("synthetic_spec_sha256"),
+                        _utc_now(),
+                    ),
+                )
+                conn.executemany(
+                    """
+                    INSERT INTO gov_terminal_metric (
+                        terminal_sha256, metric, split, horizon, unit, value, std_dev,
+                        min_value, max_value
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    [(
+                        digest, metric["metric"], metric["split"], metric["horizon"],
+                        metric["unit"], metric["value"], metric["std_dev"],
+                        metric["min_value"], metric["max_value"],
+                    ) for metric in terminal["metrics"]],
+                )
+                conn.executemany(
+                    """
+                    INSERT INTO gov_terminal_dataset (
+                        terminal_sha256, delivery_id, lake_id, resource_id, role, sha256,
+                        bytes, source_sha256, range_from, range_to, delivery_kind,
+                        time_column, availability_contract_sha256, verification_state
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    [(
+                        digest, item["delivery_id"], item["lake_id"], item["resource_id"],
+                        item["role"], item["sha256"], item["bytes"], item["source_sha256"],
+                        item["range_from"], item["range_to"], item["delivery_kind"],
+                        item["time_column"], item["availability_contract_sha256"],
+                        item["state"],
+                    ) for item in datasets],
+                )
+                conn.executemany(
+                    "INSERT INTO gov_terminal_artifact (terminal_sha256, role, sha256, bytes) "
+                    "VALUES (?, ?, ?, ?)",
+                    [(
+                        digest, artifact["role"], artifact["sha256"], artifact["bytes"]
+                    ) for artifact in terminal["artifacts"]],
+                )
+        finally:
+            conn.close()
+        return {"stored": True, "already_stored": False, "terminal_sha256": digest}
+
+    def terminal_digests(self, campaign_sha256):
+        conn = self._connect(create=True)
+        try:
+            rows = conn.execute(
+                "SELECT terminal_sha256, unit_id, generation FROM gov_terminal "
+                "WHERE campaign_sha256 = ? ORDER BY unit_id, generation",
+                (campaign_sha256,),
+            ).fetchall()
+            return [dict(row) for row in rows]
+        finally:
+            conn.close()
 
     def storage(self):
         import shutil

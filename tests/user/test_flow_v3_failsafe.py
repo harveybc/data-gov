@@ -2,9 +2,13 @@
 
 import hashlib
 import json
+import re
 import sqlite3
 from pathlib import Path
 
+import pytest
+
+from app.client import DataGovClient
 from tests.conftest import LAB_EARLY, PREDICTOR_KEY, lake_spec
 
 
@@ -53,6 +57,24 @@ def _download(client, campaign, unit="u001"):
         query_string={"lake": "lab_files", "resource": LAB_EARLY, "role": "x"},
         headers=_headers(campaign, unit),
     )
+
+
+def test_governing_download_requires_declared_unit(client):
+    campaign = _submit(client)
+    response = _download(client, campaign, unit=None)
+    assert response.status_code == 403
+    assert response.get_json()["error"] == "unit is not declared by campaign"
+
+
+def test_accounting_cannot_create_unitless_governing_delivery(runtime):
+    with pytest.raises(ValueError, match="requires unit_id"):
+        runtime["plugins"]["accounting"].create_delivery(
+            campaign_sha256="a" * 64, unit_id=None, actor="predictor",
+            lake_id="lab_files", resource_id=LAB_EARLY, role="x",
+            range_from=None, range_to=None, sha256="b" * 64, bytes_count=1,
+            source_sha256="c" * 64, delivery_kind="AS_IS", time_column="ts",
+            availability_contract_sha256="d" * 64,
+        )
 
 
 def _confirm(client, campaign, delivery_id, digest, size, cached=False):
@@ -118,6 +140,8 @@ def test_delivery_needs_client_confirmation_before_terminal(client, runtime):
     assert response.status_code == 200
     delivery_id = response.headers["X-Delivery-ID"]
     digest = response.headers["X-Content-SHA256"]
+    contract_digest = response.headers["X-Availability-Contract-SHA256"]
+    assert re.fullmatch(r"[0-9a-f]{64}", contract_digest)
     body = response.data
 
     terminal = _terminal(
@@ -144,6 +168,8 @@ def test_delivery_needs_client_confirmation_before_terminal(client, runtime):
     )
     assert accepted.status_code == 201, accepted.get_json()
     assert _rows(runtime, "gov_terminal")[0]["status"] == "COMPLETED"
+    dataset_row = _rows(runtime, "gov_terminal_dataset")[0]
+    assert dataset_row["availability_contract_sha256"] == contract_digest
 
 
 def test_cache_confirmation_is_distinct(client):
@@ -223,3 +249,22 @@ def test_reconciliation_names_missing_units_without_repair(client):
     body = response.get_json()
     assert body["missing_units"] == ["u002"]
     assert body["accounting_only"] == [] and body["lake_only"] == []
+
+
+def test_official_client_executes_the_complete_governed_protocol(client, tmp_path):
+    gov = DataGovClient(test_client=client, api_key=PREDICTOR_KEY)
+    status, registered = gov.submit_campaign(_campaign(campaign_key="client-flow"))
+    assert status == 201
+    campaign = registered["campaign_sha256"]
+    status, dataset = gov.governed_download(
+        campaign, "u001", "lab_files", LAB_EARLY, "x", tmp_path / "cache"
+    )
+    assert status == 200
+    assert Path(dataset["path"]).read_bytes()
+    assert dataset["verification_state"] == "VERIFIED_TRANSFER"
+    terminal = _terminal("COMPLETED", deliveries=[dataset["delivery_id"]])
+    status, receipt = gov.report_terminal(campaign, "u001", terminal)
+    assert status == 201 and receipt["terminal_sha256"]
+    status, reconciliation = gov.reconcile_campaign(campaign)
+    assert status == 200
+    assert reconciliation["missing_units"] == ["u002"]

@@ -3,8 +3,8 @@
   "method_version": "1.0",
   "project_id": "data-gov-failsafe-v3",
   "objective": "Provide reproducible campaign registration, verified data delivery, durable terminal reporting and OLAP reconciliation without calls in learning loops.",
-  "updated_at": "2026-09-13T23:30:00-05:00",
-  "current_stage": "S8_UNIT_TEST_DESIGN",
+  "updated_at": "2026-09-13T20:54:00-05:00",
+  "current_stage": "S14_RELEASE_OPERATION",
   "stages": [
     {"id": "S0_DISCOVERY", "status": "PASSED", "optional": false, "artifacts": ["docs/05_PROPUESTA_MUSASHI_BETA_2026_09_13.md"], "evidence": [], "review": "MUSASHI_2026-09-13"},
     {"id": "S1_REQUIREMENTS", "status": "PASSED", "optional": false, "artifacts": ["docs/06_FLOW_V3_FAILSAFE.md"], "evidence": [], "review": "MUSASHI_2026-09-13"},
@@ -14,13 +14,13 @@
     {"id": "S5_SYSTEM_TEST_DESIGN", "status": "PASSED", "optional": false, "artifacts": ["docs/GOVERNANCE_V3_TRACEABILITY.md"], "evidence": [], "review": "MUSASHI_2026-09-13"},
     {"id": "S6_COMPONENT_DESIGN", "status": "PASSED", "optional": false, "artifacts": ["docs/06_FLOW_V3_FAILSAFE.md"], "evidence": [], "review": "MUSASHI_2026-09-13"},
     {"id": "S7_INTEGRATION_TEST_DESIGN", "status": "PASSED", "optional": false, "artifacts": ["docs/GOVERNANCE_V3_TRACEABILITY.md"], "evidence": [], "review": "MUSASHI_2026-09-13"},
-    {"id": "S8_UNIT_TEST_DESIGN", "status": "IN_PROGRESS", "optional": false, "artifacts": ["tests/user/test_flow_v3_failsafe.py", "tests/unit/test_flow_v3_storage.py"], "evidence": [], "review": null},
-    {"id": "S9_UNIT_IMPLEMENTATION", "status": "NOT_STARTED", "optional": false, "artifacts": [], "evidence": [], "review": null},
-    {"id": "S10_INTEGRATION_VERIFICATION", "status": "NOT_STARTED", "optional": false, "artifacts": [], "evidence": [], "review": null},
-    {"id": "S11_SYSTEM_VERIFICATION", "status": "NOT_STARTED", "optional": false, "artifacts": [], "evidence": [], "review": null},
-    {"id": "S12_ALPHA_ACCEPTANCE", "status": "NOT_STARTED", "optional": false, "artifacts": [], "evidence": [], "review": null},
+    {"id": "S8_UNIT_TEST_DESIGN", "status": "PASSED", "optional": false, "artifacts": ["tests/user/test_flow_v3_failsafe.py", "tests/unit/test_flow_v3_storage.py"], "evidence": ["112 passed, 1 skipped"], "review": "MUSASHI_2026-09-13"},
+    {"id": "S9_UNIT_IMPLEMENTATION", "status": "PASSED", "optional": false, "artifacts": ["app/governance.py", "app/outbox.py", "app/client.py"], "evidence": ["112 passed, 1 skipped"], "review": "MUSASHI_2026-09-13"},
+    {"id": "S10_INTEGRATION_VERIFICATION", "status": "PASSED", "optional": false, "artifacts": ["tools/verify_flow_v3_e2e.py"], "evidence": ["financial lake -> data-gov -> OLAP reconciliation exact"], "review": "MUSASHI_2026-09-13"},
+    {"id": "S11_SYSTEM_VERIFICATION", "status": "PASSED", "optional": false, "artifacts": ["tools/verify_flow_v3_e2e.py"], "evidence": ["missing_units=[], accounting_only=[], lake_only=[]"], "review": "MUSASHI_2026-09-13"},
+    {"id": "S12_ALPHA_ACCEPTANCE", "status": "PASSED", "optional": false, "artifacts": ["docs/06_FLOW_V3_FAILSAFE.md"], "evidence": ["disposable end-to-end acceptance"], "review": "MUSASHI_2026-09-13"},
     {"id": "S13_BETA_ACCEPTANCE", "status": "NOT_STARTED", "optional": true, "artifacts": [], "evidence": [], "review": null},
-    {"id": "S14_RELEASE_OPERATION", "status": "NOT_STARTED", "optional": false, "artifacts": [], "evidence": [], "review": null}
+    {"id": "S14_RELEASE_OPERATION", "status": "READY_NOT_DEPLOYED", "optional": false, "artifacts": ["docs/06_FLOW_V3_FAILSAFE.md"], "evidence": [], "review": null}
   ],
   "requirements": [
     {"id": "GOV-001", "text": "Register a content-addressed campaign before governing data delivery.", "status": "ACCEPTED", "source": "Musashi audit"},
@@ -34,11 +34,15 @@
     {"id": "GOV-009", "text": "Use unique canonical metric identity.", "status": "ACCEPTED", "source": "Musashi audit"},
     {"id": "GOV-010", "text": "Require exact code identity for governing evidence.", "status": "ACCEPTED", "source": "reproducibility"},
     {"id": "GOV-011", "text": "Write every terminal through the configured OLAP adapter.", "status": "ACCEPTED", "source": "owner requirement"},
-    {"id": "GOV-012", "text": "Reconcile cube and accounting without silent repair.", "status": "ACCEPTED", "source": "Musashi audit"}
+    {"id": "GOV-012", "text": "Reconcile cube and accounting without silent repair.", "status": "ACCEPTED", "source": "Musashi audit"},
+    {"id": "GOV-013", "text": "Refuse a governing run that would overwrite prior scientific artifacts.", "status": "ACCEPTED", "source": "fail-safe reproducibility"}
   ],
   "traceability_file": "docs/GOVERNANCE_V3_TRACEABILITY.md",
-  "next_allowed_actions": ["Freeze failing v3 tests", "Implement bottom-up only after S8 passes review"],
-  "blocked_actions": ["Do not restart live services", "Do not claim beta acceptance", "Do not run scientific workloads"],
+  "next_allowed_actions": ["Review and merge the three implementation branches", "Provision explicit availability contracts", "Deploy during a controlled service window"],
+  "blocked_actions": ["Do not restart live services from this worktree", "Do not call a result governing when its resource lacks an availability contract", "Do not run scientific workloads before deployment"],
   "open_decisions": [],
-  "history": [{"at": "2026-09-13T23:30:00-05:00", "stage": "S8_UNIT_TEST_DESIGN", "event": "Requirements, use cases, architecture and test matrix frozen"}]
+  "history": [
+    {"at": "2026-09-13T19:30:00-05:00", "stage": "S8_UNIT_TEST_DESIGN", "event": "Requirements, use cases, architecture and test matrix frozen"},
+    {"at": "2026-09-13T20:42:02-05:00", "stage": "S12_ALPHA_ACCEPTANCE", "event": "Unit, integration and disposable three-service acceptance passed"}
+  ]
 }
