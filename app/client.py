@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import time
 import uuid
 from pathlib import Path
@@ -31,6 +32,14 @@ def _sha256_file(path):
                 break
             digest.update(block)
     return digest.hexdigest()
+
+
+def _fsync_dir(path):
+    fd = os.open(path, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
+    try:
+        os.fsync(fd)
+    finally:
+        os.close(fd)
 
 
 def _retry_after(value):
@@ -187,35 +196,48 @@ class DataGovClient:
             finally:
                 response.close()
 
-    def _save(self, response, dest: Path):
+    def _save(self, response, dest: Path, *, governing=False):
         expected = (response.header("X-Content-SHA256") or "").lower()
+        if not re.fullmatch(r"[0-9a-f]{64}", expected):
+            return 502, {"error": "missing content digest"}
         filename = filename_from_disposition(response.header("Content-Disposition"))
         ext = Path(filename).suffix if filename else ""
+        source_sha256 = (response.header("X-Source-SHA256") or "").lower()
+        contract_sha256 = (
+            response.header("X-Availability-Contract-SHA256") or ""
+        ).lower()
+        if governing and not re.fullmatch(r"[0-9a-f]{64}", source_sha256):
+            return 502, {"error": "missing source digest"}
+        if governing and not re.fullmatch(r"[0-9a-f]{64}", contract_sha256):
+            return 502, {"error": "missing availability contract digest"}
         info = {
             "sha256": expected,
             "filename": filename,
-            "source_sha256": response.header("X-Source-SHA256"),
+            "source_sha256": source_sha256 or None,
             "delivery": response.header("X-Delivery"),
             "time_column": response.header("X-Time-Column") or "",
-            "availability_contract_sha256": response.header(
-                "X-Availability-Contract-SHA256"
-            ) or "",
+            "availability_contract_sha256": contract_sha256,
             "cached": False,
         }
         target = dest / f"{expected}{ext}"
-        if expected and target.is_file() and _sha256_file(target) == expected:
+        if target.exists():
+            if not target.is_file() or _sha256_file(target) != expected:
+                return 409, {"error": "cache identity conflict", "sha256": expected}
             info.update(path=str(target), bytes=target.stat().st_size, cached=True)
             return 200, info
         # one writer, one part file: parallel downloads of the same bytes never share a partial file
         part = dest / f"{expected}{ext}.{os.getpid()}.{uuid.uuid4().hex}.part"
         digest = hashlib.sha256()
         size = 0
+        fd = os.open(part, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
         try:
-            with open(part, "wb") as out:
+            with os.fdopen(fd, "wb") as out:
                 for chunk in response.iter_chunks():
                     digest.update(chunk)
                     out.write(chunk)
                     size += len(chunk)
+                out.flush()
+                os.fsync(out.fileno())
         except BaseException:
             part.unlink(missing_ok=True)
             raise
@@ -223,7 +245,16 @@ class DataGovClient:
         if not expected or actual != expected:
             part.unlink(missing_ok=True)
             return 502, {"error": "hash mismatch", "expected": expected, "actual": actual}
-        os.replace(part, target)
+        try:
+            os.link(part, target)
+        except FileExistsError:
+            if not target.is_file() or _sha256_file(target) != expected:
+                part.unlink(missing_ok=True)
+                return 409, {"error": "cache publication conflict", "sha256": expected}
+            info["cached"] = True
+        finally:
+            part.unlink(missing_ok=True)
+        _fsync_dir(dest)
         info.update(path=str(target), bytes=size)
         return 200, info
 
@@ -293,9 +324,11 @@ class DataGovClient:
                 if response.status != 200:
                     return response.status, response.read_json()
                 delivery_id = response.header("X-Delivery-ID")
-                if not delivery_id:
+                if not isinstance(delivery_id, str) or not re.fullmatch(
+                    r"[0-9a-f]{32}", delivery_id
+                ):
                     return 502, {"error": "missing delivery identity"}
-                status, info = self._save(response, dest)
+                status, info = self._save(response, dest, governing=True)
             finally:
                 response.close()
             if status != 200:

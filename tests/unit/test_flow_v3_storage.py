@@ -6,6 +6,8 @@ from pathlib import Path
 
 import pytest
 
+from app.client import DataGovClient
+from app.httpstream import BufferedResponse
 from app.outbox import TerminalOutbox
 from lake_plugins.files_lake import Plugin as FilesLake
 from tests.conftest import LAB_EARLY, write_lab_files
@@ -73,3 +75,39 @@ def test_outbox_survives_failure_and_flushes_once(tmp_path):
     assert reopened.flush(accepted) == {"sent": 1, "pending": 0}
     assert reopened.flush(accepted) == {"sent": 0, "pending": 0}
     assert calls == ["down", "u001"]
+
+
+def _delivery_response(body, **headers):
+    digest = hashlib.sha256(body).hexdigest()
+    values = {
+        "Content-Disposition": 'attachment; filename="data.csv"',
+        "X-Content-SHA256": digest,
+        "X-Source-SHA256": "a" * 64,
+        "X-Availability-Contract-SHA256": "b" * 64,
+        **headers,
+    }
+    return BufferedResponse(200, values, body), digest
+
+
+def test_official_client_refuses_missing_governing_contract_digest(tmp_path):
+    response, _ = _delivery_response(
+        b"x\n", **{"X-Availability-Contract-SHA256": ""}
+    )
+    status, body = DataGovClient()._save(
+        response, tmp_path / "cache", governing=True
+    )
+    assert status == 502
+    assert body == {"error": "missing availability contract digest"}
+
+
+def test_official_client_never_replaces_conflicting_cached_bytes(tmp_path):
+    cache = tmp_path / "cache"
+    cache.mkdir()
+    response, digest = _delivery_response(b"governing bytes\n")
+    target = cache / f"{digest}.csv"
+    target.write_bytes(b"different bytes\n")
+
+    status, body = DataGovClient()._save(response, cache, governing=True)
+    assert status == 409
+    assert body["error"] == "cache identity conflict"
+    assert target.read_bytes() == b"different bytes\n"
