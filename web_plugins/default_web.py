@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import datetime as _dt
 import json
 import math
@@ -770,6 +771,19 @@ class Plugin:
                 ):
                     handle.close()
                     return json_error(503, "lake returned no availability contract identity")
+                # S2: retain the canonical contract at the moment it is verified, so the
+                # accounting can answer for it later even if the producer is gone.
+                canonical_now = info.get("availability_contract_canonical")
+                if isinstance(canonical_now, str) and canonical_now:
+                    try:
+                        plugins()["accounting"].retain_availability_contract(
+                            contract_sha256, canonical_now)
+                    except ValueError:
+                        handle.close()
+                        return json_error(
+                            502, "lake availability contract does not match its identity")
+                    except AttributeError:
+                        pass
                 delivery_id = plugins()["accounting"].create_delivery(
                     campaign_sha256=campaign_sha, unit_id=unit_id, actor=actor,
                     lake_id=lake_id, resource_id=resource, role=role,
@@ -808,6 +822,14 @@ class Plugin:
                 response.headers["X-Availability-Contract-SHA256"] = str(
                     info.get("availability_contract_sha256") or ""
                 )
+                # S2: the canonical contract itself, base64 so it survives a header, and only
+                # when the lake actually produced it. A lake that does not publish it leaves
+                # the reference unresolvable downstream, which is reported as UNRESOLVED
+                # rather than filled in.
+                canonical = info.get("availability_contract_canonical")
+                if isinstance(canonical, str) and canonical:
+                    response.headers["X-Availability-Contract"] = base64.b64encode(
+                        canonical.encode("ascii")).decode("ascii")
                 # the scope of the contract, published separately: what the label denotes,
                 # the completion bound, the time-zone evidence and the use class
                 scope = info.get("availability") or {}
@@ -916,6 +938,27 @@ class Plugin:
                 return jsonify({"terminal_sha256": terminal["terminal_sha256"],
                                 "stored": False, "already_stored": True}), 200
             lake = plugins()["lakes"][campaign["terminal_lake"]]
+            # S2: retain the contracts this terminal's deliveries reference BEFORE the
+            # terminal itself, and as a separate call. A terminal's identity is the digest of
+            # its own body: putting contracts inside it would change every receipt's identity,
+            # including the historical ones. A store that cannot retain them is not an error —
+            # its deliveries simply resolve as UNRESOLVED, which is the truth about them.
+            retain = getattr(lake, "write_availability_contracts", None)
+            if callable(retain):
+                try:
+                    held = plugins()["accounting"].availability_contracts(
+                        [item.get("availability_contract_sha256")
+                         for item in terminal["verified_datasets"]])
+                except AttributeError:
+                    held = []
+                if held:
+                    try:
+                        retain([{"contract_sha256": row["contract_sha256"],
+                                 "canonical_bytes": row["canonical_bytes"]} for row in held])
+                    except ValueError as exc:
+                        return json_error(400, f"availability contract refused: {exc}")
+                    except LakeUnreachable as exc:
+                        return json_error(503, f"terminal lake unreachable: {exc}")
             try:
                 outcome = lake.write_terminal(terminal)
                 plugins()["accounting"].record_terminal(

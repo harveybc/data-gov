@@ -539,9 +539,11 @@ class Plugin:
     def governed_download(self, resource_id: str, start=None, end=None):
         """Return a retained descriptor for bytes validated by an availability contract."""
         contract = self._resource_contract(resource_id)
-        contract_sha256 = hashlib.sha256(
-            json.dumps(contract, sort_keys=True, separators=(",", ":")).encode("ascii")
-        ).hexdigest()
+        # S2: the canonical bytes, kept rather than recomputed downstream. A consumer that
+        # holds only the digest cannot say what the contract SAID once this producer stops,
+        # and reconstructing it from the published headers does not reproduce the digest.
+        contract_canonical = json.dumps(contract, sort_keys=True, separators=(",", ":"))
+        contract_sha256 = hashlib.sha256(contract_canonical.encode("ascii")).hexdigest()
         info = self._download(
             resource_id, start, end,
             explicit_col=contract["available_time_column"],
@@ -579,6 +581,7 @@ class Plugin:
             info = dict(
                 info, sha256=actual, bytes=size, handle=os.fdopen(fd, "rb"),
                 availability_contract_sha256=contract_sha256,
+                availability_contract_canonical=contract_canonical,
             )
             fd = None
             return info

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
 import uuid
@@ -229,6 +230,22 @@ class Plugin:
         if len(contract_sha) != 64 or any(char not in "0123456789abcdef" for char in contract_sha):
             part.unlink(missing_ok=True)
             raise RuntimeError("lake availability contract identity missing")
+        # S2: the canonical contract, if this lake publishes it. It is VERIFIED against the
+        # digest the lake also sent: a body that does not hash to the identity we are about to
+        # record is refused outright rather than retained under the wrong key. A lake that
+        # sends no body is not an error — the reference simply stays unresolvable, and the
+        # warehouse reports UNRESOLVED instead of inventing a use class.
+        contract_canonical = None
+        encoded = response.header("X-Availability-Contract")
+        if encoded:
+            try:
+                contract_canonical = base64.b64decode(encoded, validate=True).decode("ascii")
+            except Exception:
+                part.unlink(missing_ok=True)
+                raise RuntimeError("lake availability contract is not decodable")
+            if hashlib.sha256(contract_canonical.encode("ascii")).hexdigest() != contract_sha:
+                part.unlink(missing_ok=True)
+                raise RuntimeError("lake availability contract does not match its identity")
         handle = open(part, "rb")
         part.unlink()
         filename = filename_from_disposition(response.header("Content-Disposition"))
@@ -241,6 +258,7 @@ class Plugin:
             "delivery": response.header("X-Delivery"),
             "time_column": response.header("X-Time-Column") or "",
             "availability_contract_sha256": contract_sha,
+            "availability_contract_canonical": contract_canonical,
             "availability": {
                 "label": response.header("X-Availability-Label") or "UNKNOWN",
                 "completion_lag_max": response.header("X-Availability-Completion-Lag-Max") or None,
@@ -277,6 +295,26 @@ class Plugin:
             "already_stored": bool(body.get("already_stored")),
             "terminal_sha256": body.get("terminal_sha256"),
         }
+
+    def write_availability_contracts(self, contracts: list):
+        """Hand the canonical contracts to a remote store that retains them.
+
+        A store that does not answer this route (404) or declines it (422) is left alone: the
+        deliveries it holds resolve as UNRESOLVED and nothing is guessed on its behalf. A 400
+        is different — the store looked at the bytes and refused them — and is raised.
+        """
+        response = self._open("/api/v2/availability-contracts", method="POST",
+                              json_body={"contracts": contracts})
+        try:
+            body = response.read_json()
+        finally:
+            response.close()
+        if response.status in (404, 422):
+            return {"stored": 0, "already_stored": 0, "retained": False}
+        if response.status not in (200, 201):
+            self._raise_http(response.status, body)
+        return {"stored": int(body.get("stored") or 0),
+                "already_stored": int(body.get("already_stored") or 0), "retained": True}
 
     def terminal_digests(self, campaign_sha256):
         payload = self._get(
