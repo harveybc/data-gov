@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from app.client import DataGovClient
+from data_gov.client import DataGovClient
 from tests.conftest import LAB_EARLY, PREDICTOR_KEY, lake_spec
 
 

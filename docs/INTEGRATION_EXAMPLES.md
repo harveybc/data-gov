@@ -46,7 +46,7 @@ through a local file containing only that key. It is different from the
 store-to-governance token.
 
 ```python
-from app.client import DataGovClient
+from data_gov.client import DataGovClient
 
 client = DataGovClient(
     base_url="http://127.0.0.1:5055",
@@ -70,9 +70,11 @@ if status != 200:
 print(result)
 ```
 
-This is inspection, not campaign registration or training. Run it in the
-data-gov environment: the current `app` name is not safe to co-install with
-the other repositories. Use the generic executable below from other packages.
+This is inspection, not campaign registration or training. The application
+package is `data_gov`, a name no sibling repository claims, so the client
+imports cleanly even where another project's top-level `app` is installed.
+The plugin packages are still shared names; use the generic executable below
+from other packages rather than co-installing whole services.
 
 ## Command-based consumer
 

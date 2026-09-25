@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 from flask import Flask, Response, jsonify
 
-from app.client import DataGovClient
+from data_gov.client import DataGovClient
 from tests.conftest import (
     DOIN_KEY,
     HAS_PREDICTOR_DATA,

@@ -46,9 +46,9 @@ def _data_gov_app():
     import importlib
     import importlib.util
 
-    name = "data_gov_app"
+    name = "data_gov_pkg"
     if name not in sys.modules:
-        package = DATA_GOV / "app"
+        package = DATA_GOV / "data_gov"
         spec = importlib.util.spec_from_file_location(
             name, package / "__init__.py", submodule_search_locations=[str(package)])
         module = importlib.util.module_from_spec(spec)

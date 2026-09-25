@@ -1,4 +1,4 @@
-from app.plugin_loader import load_plugin
+from data_gov.plugin_loader import load_plugin
 
 
 def test_entry_points():

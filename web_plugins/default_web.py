@@ -24,8 +24,8 @@ from flask import (
     url_for,
 )
 
-from app.report import canonical_body, canonical_json, report_sha256
-from app.governance import (
+from data_gov.report import canonical_body, canonical_json, report_sha256
+from data_gov.governance import (
     HEX64_RE as GOV_HEX64_RE,
     canonical_json as governance_json,
     object_sha256 as governance_sha256,
@@ -317,7 +317,7 @@ class Plugin:
         @login_required
         def settings():
             import secrets
-            from app.operator_config import editable_config, pending_config, persist_pending, destination
+            from data_gov.operator_config import editable_config, pending_config, persist_pending, destination
 
             if current_user().get("role") not in {"ceo", "data_engineer"}:
                 return "Operator role required", 403

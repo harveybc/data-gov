@@ -3,7 +3,10 @@ from setuptools import find_packages, setup
 setup(
     name="data-gov",
     version="0.1.0",
-    packages=find_packages(),
+    # `app/` is a checkout-only compatibility shim for the former package name.
+    # It is never installed: every sibling repository of the programme ships its
+    # own top-level `app`, and two of them in one interpreter shadow each other.
+    packages=find_packages(exclude=["app", "app.*", "tests", "tests.*"]),
     include_package_data=True,
     package_data={
             "web_plugins": [
@@ -14,7 +17,7 @@ setup(
         },
     entry_points={
         "console_scripts": [
-            "data-gov=app.main:main",
+            "data-gov=data_gov.main:main",
         ],
         "datagov.pipeline": [
             "default_pipeline=pipeline_plugins.default_pipeline:Plugin",

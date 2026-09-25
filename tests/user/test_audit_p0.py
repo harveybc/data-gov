@@ -3,7 +3,7 @@
 from tests.conftest import PREDICTOR_KEY, FINANCIAL_ROOT
 
 import pytest
-from app.client import DataGovClient
+from data_gov.client import DataGovClient
 
 
 RESOURCE = "market_data/crypto/funding_rates/btcusdt/funding_rates.parquet"

@@ -11,8 +11,8 @@ from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 
-from app.httpstream import BufferedResponse, filename_from_disposition, open_stream
-from app.store_metadata import store_metadata
+from data_gov.httpstream import BufferedResponse, filename_from_disposition, open_stream
+from data_gov.store_metadata import store_metadata
 from lake_plugins.errors import LakeUnreachable, UnsupportedError
 
 
@@ -40,7 +40,7 @@ class Plugin:
         token = self.params.get("lake_service_token")
         if not token:
             try:
-                from app.lake_auth import load_token
+                from data_gov.lake_auth import load_token
 
                 token = load_token()
             except Exception:

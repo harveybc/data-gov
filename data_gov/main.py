@@ -8,12 +8,12 @@ from pathlib import Path
 from typing import Any
 
 import os
-from app.cli import parse_args
-from app.config import DEFAULT_VALUES
-from app.config_handler import load_config, save_config
-from app.config_merger import merge_config, process_unknown_args
-from app.lake_auth import load_token
-from app.plugin_loader import get_plugin_params, load_plugin
+from data_gov.cli import parse_args
+from data_gov.config import DEFAULT_VALUES
+from data_gov.config_handler import load_config, save_config
+from data_gov.config_merger import merge_config, process_unknown_args
+from data_gov.lake_auth import load_token
+from data_gov.plugin_loader import get_plugin_params, load_plugin
 
 GROUPS = {
     "pipeline_plugin": "datagov.pipeline",

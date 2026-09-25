@@ -79,8 +79,12 @@ reporting API; they do not receive a database connection for direct INSERTs.
 
 ## Quickstart
 
-Use **one Python environment per service**. Current packages share names such
-as `app` and `web_plugins`; co-installing them can resolve the wrong modules.
+Use **one Python environment per service**. The application package is
+`data_gov` (renamed from `app` on 2026-09-25, because every sibling
+repository ships its own top-level `app` and the installed console script
+resolved into theirs); the plugin packages still share names such as
+`web_plugins` and `pipeline_plugins`, so co-installing services can still
+resolve the wrong plugin modules.
 Python 3.12 is the tested version for this guide. The package does not declare
 an enforced minimum Python version. No GPU is needed.
 
@@ -92,7 +96,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 pip install -e .
 python scripts/issue_credentials.py
-python -m app.main --help
+python -m data_gov.main --help
 python -m pytest tests -q
 ```
 
@@ -328,7 +332,7 @@ and exact commits instead of local machine paths.
 | `operator_config_path` | Optional path for the pending operator configuration |
 
 Merge precedence is plugin defaults, application defaults, JSON, then
-**long-form CLI flags**. Run `python -m app.main --help` for supported flags.
+**long-form CLI flags**. Run `python -m data_gov.main --help` for supported flags.
 Relative storage paths are resolved by the application's entry point; prefer
 explicit absolute paths in deployed configs. Preserve existing IDs when
 moving a service to another host.
@@ -358,11 +362,11 @@ also require `X-Experiment-Key`. Flow v3 deliveries bind
 | `GET /api/v1/experiments/<key>/usage` | Experiment usage history |
 | `GET /api/v1/datasets/<sha>/usage` | Delivered-dataset usage history |
 
-[`app.client.DataGovClient`](app/client.py) provides `lakes`, `resources`,
+[`data_gov.client.DataGovClient`](data_gov/client.py) provides `lakes`, `resources`,
 `coverage`, `query`, `submit_campaign`, `governed_download`, `report_terminal`
 and `reconcile_campaign`. Methods return an HTTP status and payload; callers
 must handle non-success statuses. Exact bodies are defined in
-[`app/governance.py`](app/governance.py) and [Flow v3](docs/06_FLOW_V3_FAILSAFE.md).
+[`data_gov/governance.py`](data_gov/governance.py) and [Flow v3](docs/06_FLOW_V3_FAILSAFE.md).
 
 ## Testing and verification
 
@@ -415,7 +419,8 @@ Do not silently delete failed runs or pending outcomes to clear a dashboard.
 Register plugins with setuptools entry points and install their distributions
 in the service environment. The JSON selects an installed entry-point name;
 a GitHub URL in JSON does not install a package. Use a unique Python package
-namespace for external plugins. Do not reuse `app` in new packages.
+namespace for external plugins. Do not reuse `app` in new packages: the
+checkout-only `app/` shim here forwards to `data_gov` and is never installed.
 
 The [package-separation design](docs/STORE_PACKAGES_DESIGN.md) describes proposed
 `data-lake` and `data-warehouse` hosts with external providers. Those are a

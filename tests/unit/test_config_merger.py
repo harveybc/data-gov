@@ -1,4 +1,4 @@
-from app.config_merger import convert_type, merge_config, process_unknown_args
+from data_gov.config_merger import convert_type, merge_config, process_unknown_args
 
 
 def test_process_unknown_and_types(monkeypatch):

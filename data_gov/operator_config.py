@@ -9,8 +9,8 @@ from datetime import date
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from app.main import check_startup
-from app.store_metadata import store_metadata
+from data_gov.main import check_startup
+from data_gov.store_metadata import store_metadata
 
 STORE_FIELDS = {
     'plugin', 'lake_id', 'title', 'description', 'kind', 'engine', 'base_url',

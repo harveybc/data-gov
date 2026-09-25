@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from app.report import report_sha256
+from data_gov.report import report_sha256
 
 LAKE_QUERY = Path(__file__).resolve().parents[3] / "predictor" / "olap" / "lake" / "query_plugins" / "sql_query.py"
 

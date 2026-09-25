@@ -9,4 +9,4 @@ if [ -f "$ROOT/var/lake_token" ]; then
   DATA_GOV_LAKE_TOKEN="$(tr -d '\n' < "$ROOT/var/lake_token")"
   export DATA_GOV_LAKE_TOKEN
 fi
-exec python3 -m app.main --load_config var/config.json "$@"
+exec python3 -m data_gov.main --load_config var/config.json "$@"

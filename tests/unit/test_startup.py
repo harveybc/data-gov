@@ -1,8 +1,8 @@
-"""Startup rules of app.main: holdout lakes need deny_from policies; the spool is swept."""
+"""Startup rules of data_gov.main: holdout lakes need deny_from policies; the spool is swept."""
 
 import pytest
 
-from app.main import check_startup, sweep_spool
+from data_gov.main import check_startup, sweep_spool
 
 
 def test_holdout_lake_without_deny_from_refuses_to_start():

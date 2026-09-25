@@ -11,7 +11,7 @@ import threading
 import uuid
 from pathlib import Path
 
-from app.store_metadata import store_metadata
+from data_gov.store_metadata import store_metadata
 from lake_plugins.errors import UnsupportedError
 
 import pandas as _pd
