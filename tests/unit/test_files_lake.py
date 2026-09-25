@@ -307,3 +307,36 @@ def test_real_parquet_row_group_cut(tmp_path):
     got = pq.read_table(info["path"]).column("fundingTime").to_pandas().dt.tz_localize(None)
     assert len(got) == 21  # three funding bars a day, seven days
     assert got.min() >= pd.Timestamp("2020-01-01") and got.max() < pd.Timestamp("2020-01-08")
+
+
+def test_a_declared_time_format_reads_a_day_first_string_column(tmp_path):
+    """A producer that writes "16/12/2006 17:24:00" is read by declaration, never by guess."""
+    root = tmp_path / "root"
+    root.mkdir()
+    rows = ["ts,value"] + [f"{d:02d}/12/2006 17:24:00,{d}" for d in range(1, 29)]
+    (root / "panel.csv").write_text("\n".join(rows) + "\n", encoding="ascii")
+
+    guessing = Plugin()
+    guessing.set_params(lake_id="files", root_path=str(root), include_globs=["**/*.csv"],
+                        time_column="ts")
+    with pytest.raises(UnsupportedError):
+        guessing.coverage("panel.csv")
+
+    declared = Plugin()
+    declared.set_params(lake_id="files", root_path=str(root), include_globs=["**/*.csv"],
+                        time_column="ts", time_format="%d/%m/%Y %H:%M:%S")
+    coverage = declared.coverage("panel.csv")
+    assert coverage["rows"] == 28
+    assert str(coverage["t_min"])[:10] == "2006-12-01"
+    assert str(coverage["t_max"])[:10] == "2006-12-28"
+
+
+def test_a_wrong_declared_time_format_is_refused_not_guessed_around(tmp_path):
+    root = tmp_path / "root"
+    root.mkdir()
+    (root / "panel.csv").write_text("ts,value\n16/12/2006 17:24:00,1\n", encoding="ascii")
+    lake = Plugin()
+    lake.set_params(lake_id="files", root_path=str(root), include_globs=["**/*.csv"],
+                    time_column="ts", time_format="%Y-%m-%d %H:%M:%S")
+    with pytest.raises(UnsupportedError):
+        lake.coverage("panel.csv")

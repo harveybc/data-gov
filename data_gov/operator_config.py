@@ -14,7 +14,8 @@ from data_gov.store_metadata import store_metadata
 
 STORE_FIELDS = {
     'plugin', 'lake_id', 'title', 'description', 'kind', 'engine', 'base_url',
-    'root_path', 'sqlite_path', 'include_globs', 'time_column', 'holdout_start',
+    'root_path', 'sqlite_path', 'include_globs', 'time_column', 'time_format',
+    'holdout_start',
     'resource_contracts', 'untimed', 'timeout',
 }
 TOP_FIELDS = {'web_host', 'web_port', 'max_downloads', 'lakes', 'policies'}

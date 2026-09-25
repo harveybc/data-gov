@@ -140,6 +140,10 @@ class Plugin:
         "time_column": None,
         "time_columns": {},
         "time_unit": None,
+        # strptime format of a *string* time column, when the producer writes one
+        # pandas cannot read unambiguously (e.g. "16/12/2006 17:24:00", day first).
+        # Declared, never guessed: a wrong guess silently swaps day and month.
+        "time_format": None,
         "resource_contracts": {},
         "untimed": [],
         "holdout_start": None,
@@ -246,7 +250,12 @@ class Plugin:
                     raise UnsupportedError("unparseable time column")
                 out = pd.to_datetime(series, unit=unit)
             else:
-                out = pd.to_datetime(series, utc=(timezone_mode == "UTC"))
+                fmt = self.params.get("time_format")
+                out = (
+                    pd.to_datetime(series, format=fmt, utc=(timezone_mode == "UTC"))
+                    if fmt
+                    else pd.to_datetime(series, utc=(timezone_mode == "UTC"))
+                )
         except (ValueError, TypeError, OverflowError) as exc:
             raise UnsupportedError("unparseable time column") from exc
         if not ptypes.is_datetime64_any_dtype(out):
