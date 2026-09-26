@@ -15,6 +15,7 @@ host the source datasets or replace the database that stores experiment results.
 - [Quickstart](#quickstart)
 - [Web interfaces](#web-interfaces)
 - [Connect a data lake](#connect-a-data-lake)
+- [Register a resource and its absences](#register-a-resource-and-its-absences)
 - [Connect a warehouse](#connect-a-warehouse)
 - [Run a governed experiment](#run-a-governed-experiment)
 - [Use with a coding agent](#use-with-a-coding-agent)
@@ -222,6 +223,35 @@ Add the matching policy to `policies`:
 These are entries to merge into the existing lists, not standalone complete
 governance configurations. `deny_from` is an example project boundary, not a
 universal cutoff for every dataset.
+
+## Register a resource and its absences
+
+A resource contract is executed by a lake on a delivery. A **registration** is a
+statement of knowledge about a resource, and the knowledge that matters most is
+usually what is missing: a calendar archive with a consensus and no publication
+clock cannot support an event study, and a catalog that lists only its columns
+lets a study discover that in an analysis instead of being refused.
+
+`data_gov/resource_registration.py` is an append-only, digest-keyed registry for
+exactly that. Each row carries what the resource is, where it lives, its
+coverage window, its declared clock and era boundaries, whether its publication
+instant is observed or assumed, whether it carries consensus or only actuals, a
+**named absence list**, and the digest of what was registered. The receipt clock
+is outside the key, so re-reading an unchanged resource is a duplicate and not a
+revision; a row is never rewritten (`ROW_REWRITE_REFUSED`), and `known_at(T)`
+answers with the catalog as it stood at T.
+
+```bash
+python -m data_gov.resource_registration --registry var/registry
+python -m data_gov.resource_registration --registry var/registry --known-at 2026-09-26T12:00:00Z --replay
+```
+
+Registering **grants nothing**: `execution_authorized` is `False` in every row,
+and a resource with no availability contract stays closed. The registry has no
+HTTP surface and nothing in the delivery path consults it. See
+[the resource registry](docs/08_RESOURCE_REGISTRY.md) for the key discipline, the
+closed vocabularies, and the five economic-calendar resources registered on
+2026-09-26.
 
 ## Connect a warehouse
 
@@ -446,6 +476,7 @@ including AdminLTE and Bootstrap; dataset rights are separate again.
 - [Product contract](docs/00_CONTRATO.md)
 - [Integration examples](docs/INTEGRATION_EXAMPLES.md)
 - [Store adapter contract](docs/03_LAKE_ADAPTER.md)
+- [Resource registry](docs/08_RESOURCE_REGISTRY.md)
 - [Flow v3](docs/06_FLOW_V3_FAILSAFE.md) and [legacy Flow v2](docs/04_FLOW_V2.md)
 - [Research repository map](https://github.com/harveybc/predictor/blob/master/docs/RESEARCH_STACK.md)
 - [README quality standard](https://github.com/harveybc/predictor/blob/master/docs/README_STANDARD.md)

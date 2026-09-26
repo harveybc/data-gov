@@ -1,0 +1,1381 @@
+{
+ "_redaction": {
+  "schema": "data_gov.evidence_redaction.v1",
+  "what_was_replaced": "absolute filesystem roots, replaced by <repos>, <home> and <scratchpad>",
+  "why": "this repository carries no private paths or account identifiers"
+ },
+ "actor": "satoshi-iii",
+ "clock_artifact": {
+  "path": "wp22_measured_calendar_clock.json",
+  "schema": "m5phet.calendar_clock.v1",
+  "sha256": "6ed7344b9396f366259d351f16c1a50c32e46828110f3eb5207bd36285d368a3"
+ },
+ "consensus_overlap": {
+  "consensus_resources": [
+   "tests/data/economic_calendar_2011_2021.csv"
+  ],
+  "observed_clock_resources": [
+   "economic_calendar/release_actuals/fxmacrodata/announcements.parquet"
+  ],
+  "pairs": [
+   {
+    "consensus_resource": "tests/data/economic_calendar_2011_2021.csv",
+    "consensus_window": [
+     "2011-01-01",
+     "2021-04-26"
+    ],
+    "gap_days": 1326,
+    "observed_resource": "economic_calendar/release_actuals/fxmacrodata/announcements.parquet",
+    "observed_window": [
+     "2024-12-12T08:30:00+00:00",
+     "2026-05-01T23:36:47+00:00"
+    ],
+    "overlap": "NONE"
+   }
+  ],
+  "reading": "a surprise needs an expectation and an observed publication instant. Every consensus on this machine is in one window and every observed instant is in another, and the windows do not touch, so no row anywhere can carry both. That is why the event studies are NOT_IDENTIFIED, and it is a measured comparison of coverage windows rather than a judgement",
+  "verdict": "NO_CONSENSUS_SOURCE_OVERLAPS_AN_OBSERVED_CLOCK_SOURCE"
+ },
+ "duplicates": 1,
+ "grants": "NOTHING. Four of the five resources stay CLOSED_NO_AVAILABILITY_CONTRACT and the fifth is CLOSED_NOT_IN_ANY_LAKE_ROOT. Registering a resource records what is known and missing about it; it authorizes no delivery",
+ "inventory_artifact": {
+  "path": "inventory.json",
+  "schema": "m5phet.calendar_inventory.v1",
+  "sha256": "5dd3af2c77e133bb1a29f562446677fb8d9b43f22b65a1a90eafe2f5988c9d17"
+ },
+ "refused": [],
+ "registered": 4,
+ "registered_at": "2026-09-26T07:10:00+00:00",
+ "registry": "<repos>/data-gov/var/registry",
+ "results": [
+  {
+   "absences": [
+    "AVAILABILITY_VOCABULARY_CANNOT_EXPRESS_THIS_CLOCK",
+    "CLOCK_ERA_UNDETERMINED",
+    "CLOCK_MEASURED_NOT_DOCUMENTED",
+    "NOT_IN_ANY_LAKE_ROOT",
+    "NO_CANCELLATION_STATE",
+    "NO_CONSENSUS_PUBLICATION_CLOCK",
+    "NO_PER_ROW_RECEIPT_CLOCK",
+    "NO_PROVENANCE_SIDECAR",
+    "NO_PUBLICATION_CLOCK",
+    "NO_REFERENCE_PERIOD",
+    "NO_TIMEZONE_DECLARED_BY_THE_SOURCE",
+    "REVISION_HISTORY_UNDECIDABLE"
+   ],
+   "catalog_key": "e1d42cda0360dbc5453be0e2843f6eb4bb021527ea9439fdf2dfe6baf3f0c7f2",
+   "content_sha256": "5172b322bfaf7bb568a0bb37cc2f806e8bd18ed51c5703c1098c8609a6249383",
+   "disposition": "DUPLICATE",
+   "facts_sha256": "dd90c7a468912ccc9a95820e1a0dc3063b8a8bf53fbe26da60b0233603c7d0f4",
+   "inventory_name": "archive_2011_2021",
+   "resource": "tests/data/economic_calendar_2011_2021.csv",
+   "revision_index": 1,
+   "row": {
+    "catalog_identity": {
+     "lake": "NOT_IN_ANY_LAKE_ROOT",
+     "resource": "tests/data/economic_calendar_2011_2021.csv"
+    },
+    "catalog_key": "e1d42cda0360dbc5453be0e2843f6eb4bb021527ea9439fdf2dfe6baf3f0c7f2",
+    "content_sha256": "5172b322bfaf7bb568a0bb37cc2f806e8bd18ed51c5703c1098c8609a6249383",
+    "derived_row_id": "18e2a718cbb317cd30c668568a7fc06b6d5cd029e4b815ef2def4982529c8854",
+    "execution_authorized": false,
+    "facts": {
+     "absences": [
+      {
+       "blocks": [],
+       "code": "AVAILABILITY_VOCABULARY_CANNOT_EXPRESS_THIS_CLOCK",
+       "field": "timezone_evidence",
+       "meaning": "the installed availability-contract vocabulary has no value for the clock evidence this resource actually has, so no honest contract can be written for it until that vocabulary is extended",
+       "why": "the installed availability-contract vocabulary (`financial_data_store.inventory.TIMEZONE_EVIDENCE`) offers only PRODUCER_STATEMENT and UNKNOWN. This clock is neither: it is measured from data. No honest availability contract can be written for this resource until that vocabulary carries a measured-from-data value, and declaring PRODUCER_STATEMENT would assert a producer statement that does not exist"
+      },
+      {
+       "blocks": [],
+       "code": "CLOCK_ERA_UNDETERMINED",
+       "field": "event_date+event_time",
+       "meaning": "one or more eras of this resource's span have no determined offset; rows inside them are excluded by name rather than localized by a neighbouring era's offset",
+       "why": "the offset of 2011-01-01..2012-04-30 (ESTIMATES_DISAGREE, 261 estimates); 2018-02-01..2018-02-28 (ESTIMATES_DISAGREE, 17 estimates); 2018-09-01..2018-09-30 (ESTIMATES_DISAGREE, 16 estimates) could not be determined. Rows inside these eras are excluded CLOCK_PERIOD_UNDETERMINED and never given a neighbouring era's offset"
+      },
+      {
+       "blocks": [],
+       "code": "CLOCK_MEASURED_NOT_DOCUMENTED",
+       "field": "event_date+event_time",
+       "meaning": "the clock this registration declares was MEASURED from the bytes against an independent observed-instant archive; the source documents none of it, and the measurement can be re-run and can be wrong",
+       "why": "the per-era offsets this registration declares were measured from the bytes against an independent archive of observed instants; the source states no zone at all"
+      },
+      {
+       "blocks": [],
+       "code": "NOT_IN_ANY_LAKE_ROOT",
+       "field": "lake",
+       "meaning": "no configured lake root contains these bytes, so data-gov cannot serve, hash or account for a delivery of them at all; a study reads them off the filesystem outside governance",
+       "why": "these bytes live inside a code checkout's test fixtures, under no configured lake root. data-gov cannot discover, hash, cut or account for a delivery of them, so every study that reads them reads them off the filesystem outside governance"
+      },
+      {
+       "blocks": [
+        "CAL11"
+       ],
+       "code": "NO_CANCELLATION_STATE",
+       "field": "cancellation_state",
+       "meaning": "nothing distinguishes a release that did not happen from one this resource simply does not carry",
+       "why": "nothing distinguishes a release that did not happen from one this resource omits"
+      },
+      {
+       "blocks": [
+        "CAL02",
+        "CAL03",
+        "CAL10",
+        "EVENT_STUDY"
+       ],
+       "code": "NO_CONSENSUS_PUBLICATION_CLOCK",
+       "field": "consensus",
+       "meaning": "this resource carries a consensus and records no instant at which that consensus became public, so a surprise computed from it cannot be shown to have been pre-release information",
+       "why": "54291 rows carry a consensus in column 'forecast' and no row carries any publication instant, so a surprise computed here cannot be shown to have been pre-release information"
+      },
+      {
+       "blocks": [
+        "CAL02",
+        "CAL07",
+        "CAL08",
+        "CAL12"
+       ],
+       "code": "NO_PER_ROW_RECEIPT_CLOCK",
+       "field": "receipt_instant",
+       "meaning": "the only receipt clock is at FILE grain (the download's `acquired_at`), so it cannot order two releases inside the file and is never read as a per-release receipt",
+       "why": "nothing records when any value reached this system, and no provenance sidecar supplies even a file-grain acquisition clock"
+      },
+      {
+       "blocks": [],
+       "code": "NO_PROVENANCE_SIDECAR",
+       "field": "provenance.json",
+       "meaning": "no `provenance.json` accompanies these bytes: no declared source, no declared digest and no acquisition clock",
+       "why": "no provenance.json beside economic_calendar_2011_2021.csv"
+      },
+      {
+       "blocks": [
+        "CAL02",
+        "CAL03",
+        "CAL10"
+       ],
+       "code": "NO_PUBLICATION_CLOCK",
+       "field": "publication_instant",
+       "meaning": "no column in these bytes records when a value became public; any release instant taken from this resource is assumed, never observed",
+       "why": "no column of these bytes is an instant at which a value became public; the inventory found the role absent over all 121658 rows. the only instant in the file is the SCHEDULED one. Reading it as the publication instant is an operator's assumption; the wall clock it is read on is no longer UTC but the per-era offsets measured in the clock artifact named here"
+      },
+      {
+       "blocks": [
+        "CAL05"
+       ],
+       "code": "NO_REFERENCE_PERIOD",
+       "field": "reference_period",
+       "meaning": "no column says which period a value refers to, so two series cannot be checked for comparability",
+       "why": "no column says which period a value refers to, so comparability cannot be checked"
+      },
+      {
+       "blocks": [],
+       "code": "NO_TIMEZONE_DECLARED_BY_THE_SOURCE",
+       "field": "event_date+event_time",
+       "meaning": "the producer states no time zone for this clock column; whatever zone is used downstream is a declaration by this catalog and not a fact of the source",
+       "why": "the column 'event_date+event_time' is naive in the bytes and the producer states no zone for it. Whatever zone is used downstream is a declaration of this catalog, never a fact of the source; this registration's zone comes from a measurement, which is evidence but not documentation"
+      },
+      {
+       "blocks": [],
+       "code": "REVISION_HISTORY_UNDECIDABLE",
+       "field": "actual",
+       "meaning": "values disagree at the finest key and the resource carries neither an observation clock nor a version field, so nothing in the bytes can tell a revision of one release from two releases sharing a key",
+       "why": "9 keys still carry two different values at the finest key this resource offers (event_date, event_time, country, volatility, description, evaluation, data_format, forecast, previous), and the resource carries neither an observation clock nor a version field. Nothing in these bytes can tell a REVISION of one release from two distinct releases sharing a key, so this is reported as undecidable rather than counted as a vintage. How far the count fell between the coarsest and the finest rung is the measure of how much of it was key collision"
+      }
+     ],
+     "carries": {
+      "actual": true,
+      "actual_non_null_rows": 114045,
+      "consensus": true,
+      "consensus_column": "forecast",
+      "consensus_non_null_rows": 54291,
+      "consensus_overlap_with_an_observed_clock_source": {
+       "consensus_resources": [
+        "tests/data/economic_calendar_2011_2021.csv"
+       ],
+       "observed_clock_resources": [
+        "economic_calendar/release_actuals/fxmacrodata/announcements.parquet"
+       ],
+       "pairs": [
+        {
+         "consensus_resource": "tests/data/economic_calendar_2011_2021.csv",
+         "consensus_window": [
+          "2011-01-01",
+          "2021-04-26"
+         ],
+         "gap_days": 1326,
+         "observed_resource": "economic_calendar/release_actuals/fxmacrodata/announcements.parquet",
+         "observed_window": [
+          "2024-12-12T08:30:00+00:00",
+          "2026-05-01T23:36:47+00:00"
+         ],
+         "overlap": "NONE"
+        }
+       ],
+       "reading": "a surprise needs an expectation and an observed publication instant. Every consensus on this machine is in one window and every observed instant is in another, and the windows do not touch, so no row anywhere can carry both. That is why the event studies are NOT_IDENTIFIED, and it is a measured comparison of coverage windows rather than a judgement",
+       "verdict": "NO_CONSENSUS_SOURCE_OVERLAPS_AN_OBSERVED_CLOCK_SOURCE"
+      },
+      "previous_non_null_rows": 114047,
+      "revision_history": "VINTAGE_UNDECIDABLE",
+      "revision_history_reading": "9 keys still carry two different values at the finest key this resource offers (event_date, event_time, country, volatility, description, evaluation, data_format, forecast, previous), and the resource carries neither an observation clock nor a version field. Nothing in these bytes can tell a REVISION of one release from two distinct releases sharing a key, so this is reported as undecidable rather than counted as a vintage. How far the count fell between the coarsest and the finest rung is the measure of how much of it was key collision",
+      "schedule_only": false,
+      "unit_column": "data_format",
+      "unit_values": [
+       "%",
+       "",
+       "B",
+       "K",
+       "M",
+       "T"
+      ]
+     },
+     "clock": {
+      "column": "event_date+event_time",
+      "distinct_offsets": [
+       "UTC-04:00",
+       "UTC-05:00"
+      ],
+      "documented_by_the_source": false,
+      "eras": [
+       {
+        "confidence": 0.785714,
+        "estimates": 261,
+        "from": "2011-01-01",
+        "reason": "ESTIMATES_DISAGREE",
+        "status": "UNDETERMINED",
+        "to": "2012-04-30",
+        "utc_offset": null,
+        "utc_offset_seconds": null
+       },
+       {
+        "confidence": 1.0,
+        "estimates": 1183,
+        "from": "2012-05-01",
+        "reason": null,
+        "status": "DETERMINED",
+        "to": "2018-01-31",
+        "utc_offset": "UTC-05:00",
+        "utc_offset_seconds": -18000
+       },
+       {
+        "confidence": 0.764706,
+        "estimates": 17,
+        "from": "2018-02-01",
+        "reason": "ESTIMATES_DISAGREE",
+        "status": "UNDETERMINED",
+        "to": "2018-02-28",
+        "utc_offset": null,
+        "utc_offset_seconds": null
+       },
+       {
+        "confidence": 1.0,
+        "estimates": 108,
+        "from": "2018-03-01",
+        "reason": null,
+        "status": "DETERMINED",
+        "to": "2018-08-31",
+        "utc_offset": "UTC-04:00",
+        "utc_offset_seconds": -14400
+       },
+       {
+        "confidence": 0.625,
+        "estimates": 16,
+        "from": "2018-09-01",
+        "reason": "ESTIMATES_DISAGREE",
+        "status": "UNDETERMINED",
+        "to": "2018-09-30",
+        "utc_offset": null,
+        "utc_offset_seconds": null
+       },
+       {
+        "confidence": 1.0,
+        "estimates": 70,
+        "from": "2018-10-01",
+        "reason": null,
+        "status": "DETERMINED",
+        "to": "2019-01-31",
+        "utc_offset": "UTC-05:00",
+        "utc_offset_seconds": -18000
+       },
+       {
+        "confidence": 1.0,
+        "estimates": 171,
+        "from": "2019-02-01",
+        "reason": null,
+        "status": "DETERMINED",
+        "to": "2019-10-31",
+        "utc_offset": "UTC-04:00",
+        "utc_offset_seconds": -14400
+       },
+       {
+        "confidence": 1.0,
+        "estimates": 55,
+        "from": "2019-11-01",
+        "reason": null,
+        "status": "DETERMINED",
+        "to": "2020-01-31",
+        "utc_offset": "UTC-05:00",
+        "utc_offset_seconds": -18000
+       },
+       {
+        "confidence": 0.947368,
+        "estimates": 137,
+        "from": "2020-02-01",
+        "reason": null,
+        "status": "DETERMINED",
+        "to": "2020-08-31",
+        "utc_offset": "UTC-04:00",
+        "utc_offset_seconds": -14400
+       },
+       {
+        "confidence": 1.0,
+        "estimates": 98,
+        "from": "2020-09-01",
+        "reason": null,
+        "status": "DETERMINED",
+        "to": "2021-01-31",
+        "utc_offset": "UTC-05:00",
+        "utc_offset_seconds": -18000
+       },
+       {
+        "confidence": 1.0,
+        "estimates": 61,
+        "from": "2021-02-01",
+        "reason": null,
+        "status": "DETERMINED",
+        "to": "2021-04-30",
+        "utc_offset": "UTC-04:00",
+        "utc_offset_seconds": -14400
+       }
+      ],
+      "eras_determined": 8,
+      "eras_undetermined": 3,
+      "evidence": "MEASURED_FROM_DATA_NOT_DOCUMENTED_BY_THE_SOURCE",
+      "measured_by": {
+       "path": "wp22_measured_calendar_clock.json",
+       "schema": "m5phet.calendar_clock.v1",
+       "sha256": "6ed7344b9396f366259d351f16c1a50c32e46828110f3eb5207bd36285d368a3"
+      },
+      "measurement_method": "MEASURED_FROM_THE_ARCHIVE_AGAINST_OBSERVED_PUBLICATION_CONVENTIONS",
+      "reading": "this resource's wall clock is NOT UTC. It was measured as a fixed UTC-05:00 all year round up to 2018-01 -- the archive did not move with daylight saving -- and as America/New_York local time from 2018-03, whose seasonal alternation between UTC-04:00 and UTC-05:00 is what the eras show. The source documents none of this: it is a measurement against an independent archive of observed instants, it can be re-run, and it can be wrong. Reading the column as UTC -- which every run before 2026-09-25 did -- places every US release four to five hours before it happened. An era whose offset could not be determined is excluded CLOCK_PERIOD_UNDETERMINED, never given a neighbour's offset",
+      "timezone_aware_in_the_bytes": false
+     },
+     "coverage": {
+      "column": "event_date+event_time",
+      "from": "2011-01-01",
+      "rows_with_a_value": 121658,
+      "status": "MEASURED",
+      "to": "2021-04-26",
+      "unit": "calendar_date"
+     },
+     "governed_delivery": {
+      "inventoried": false,
+      "lake": null,
+      "meaning": "outside every configured lake root: data-gov cannot serve it at all",
+      "state": "CLOSED_NOT_IN_ANY_LAKE_ROOT",
+      "what_would_open_it": "move or publish the file under a lake root that a provider inventories, then install an availability contract for it -- which today additionally needs a measured-from-data value in the timezone-evidence vocabulary",
+      "why": "these bytes live inside a code checkout's test fixtures, under no configured lake root. data-gov cannot discover, hash, cut or account for a delivery of them, so every study that reads them reads them off the filesystem outside governance"
+     },
+     "measurement_provenance": {
+      "bytes_digest_reverified_at_registration": "5172b322bfaf7bb568a0bb37cc2f806e8bd18ed51c5703c1098c8609a6249383",
+      "clock_artifact": {
+       "path": "wp22_measured_calendar_clock.json",
+       "schema": "m5phet.calendar_clock.v1",
+       "sha256": "6ed7344b9396f366259d351f16c1a50c32e46828110f3eb5207bd36285d368a3"
+      },
+      "inventory_artifact": {
+       "path": "inventory.json",
+       "schema": "m5phet.calendar_inventory.v1",
+       "sha256": "5dd3af2c77e133bb1a29f562446677fb8d9b43f22b65a1a90eafe2f5988c9d17"
+      },
+      "reading": "every count, role, unit and vintage verdict above comes from the inventory artifact; the era offsets come from the clock artifact; the coverage window and the bytes digest were re-measured by this tool on the file itself",
+      "tool": "data_gov.tools.register_calendar_resources.v1"
+     },
+     "physical_location": {
+      "bytes": 28906863,
+      "format": "csv_without_a_header_row",
+      "lake": null,
+      "reading": "the path is relative to the root it belongs to; the absolute path of the root is deliberately not registered -- it is host configuration, not a fact about the resource",
+      "resource_path_in_root": "tests/data/economic_calendar_2011_2021.csv",
+      "root_kind": "feature_eng_root",
+      "rows": 121658
+     },
+     "publication_instant": {
+      "column": "event_date+event_time",
+      "kind": "ASSUMED_SCHEDULED_PUBLICATION_LOCALIZED",
+      "meaning": "as above, over a scheduled wall clock localized by MEASURED per-era offsets: a correct anchor for an assumed clock is still an assumed clock",
+      "observed": false,
+      "why": "the only instant in the file is the SCHEDULED one. Reading it as the publication instant is an operator's assumption; the wall clock it is read on is no longer UTC but the per-era offsets measured in the clock artifact named here"
+     },
+     "source_documentation": {
+      "file": null,
+      "reading": "nothing accompanies these bytes: no README, no data dictionary and no provenance.json. The column names are declared by feature_eng_m5phet.calendar_join.DEFAULT_ARCHIVE_COLUMNS, not by a producer"
+     },
+     "study_refusal": {
+      "code": "CONSENSUS_WITHOUT_OBSERVED_PUBLICATION_CLOCK",
+      "reading": "this resource carries the consensus an event study needs and no observed publication instant, so any response measured from it is NOT_IDENTIFIED by construction. The catalog refuses the study here; it is not something to discover in an analysis"
+     },
+     "what_it_is": "A retrospective economic-calendar archive: one row per scheduled release of one economy, with the consensus, the actual and the previous value, and a scheduled wall clock with no zone. It is the only resource on this machine that carries a consensus."
+    },
+    "facts_sha256": "dd90c7a468912ccc9a95820e1a0dc3063b8a8bf53fbe26da60b0233603c7d0f4",
+    "integrity": "OK",
+    "integrity_problems": [],
+    "lake": "NOT_IN_ANY_LAKE_ROOT",
+    "receipt_clock_reading": "`registered_at` is OUTSIDE the key: it dates this reading of the resource, not the resource. Reading the same bytes and declaring the same facts again collides on the key and is a DUPLICATE, so a catalog sweep never manufactures revisions",
+    "recomputed_sha256": "30822814de0af169f1ce3d7845cd54d5f45cf622e37994a3be98d9e56f97ad1d",
+    "registered_at": "2026-09-26T06:45:00+00:00",
+    "registered_by": "satoshi-iii",
+    "registration_grants": "NOTHING: registering a resource records what is known and missing about it. It does not authorize a delivery, does not install an availability contract and does not make an absent fact present",
+    "registration_identity": {
+     "content_sha256": "5172b322bfaf7bb568a0bb37cc2f806e8bd18ed51c5703c1098c8609a6249383",
+     "facts_sha256": "dd90c7a468912ccc9a95820e1a0dc3063b8a8bf53fbe26da60b0233603c7d0f4"
+    },
+    "registration_sha256": "7301568f51b68ff24aebc7f014a3b3a69a926b833f80122e8d79ed917e518968",
+    "resource": "tests/data/economic_calendar_2011_2021.csv",
+    "revision_index": 1,
+    "row_id": "18e2a718cbb317cd30c668568a7fc06b6d5cd029e4b815ef2def4982529c8854",
+    "row_sha256": "30822814de0af169f1ce3d7845cd54d5f45cf622e37994a3be98d9e56f97ad1d",
+    "schema": "data_gov.resource_registration.v1",
+    "supersedes": [
+     "cdb07d999d8e810716b02a547ea9025af0943a2d62a91a628981f3b1ff674d0b"
+    ],
+    "supersedes_reading": "later knowledge about the same resource. The superseded rows are retained and stay true of the moment they were registered, which is what `known_at` reads them back for"
+   },
+   "row_id": "18e2a718cbb317cd30c668568a7fc06b6d5cd029e4b815ef2def4982529c8854",
+   "row_sha256": "30822814de0af169f1ce3d7845cd54d5f45cf622e37994a3be98d9e56f97ad1d"
+  },
+  {
+   "absences": [
+    "NO_AVAILABILITY_CONTRACT",
+    "NO_CANCELLATION_STATE",
+    "NO_CONSENSUS_AT_ALL",
+    "NO_PER_ROW_RECEIPT_CLOCK",
+    "NO_UNIT",
+    "REVISION_HISTORY_UNDECIDABLE"
+   ],
+   "catalog_key": "8b8938e88e3cfb5ab57f8b0b24eef4c73bdb08d6fa5d0a9e4fbde140d1e810d1",
+   "content_sha256": "d8dd8c13ed3cb4dea4265f058ef3020eff2587a3ceb6e9eec743fc5f2ca138a0",
+   "disposition": "REVISION",
+   "facts_sha256": "4cab618ee83fa3541938afc041b4f3ad42dcf1c299fa0a8b8e77f50e1d03696f",
+   "inventory_name": "fxmacrodata_announcements",
+   "resource": "economic_calendar/release_actuals/fxmacrodata/announcements.parquet",
+   "revision_index": 2,
+   "row": {
+    "catalog_identity": {
+     "lake": "financial_files",
+     "resource": "economic_calendar/release_actuals/fxmacrodata/announcements.parquet"
+    },
+    "catalog_key": "8b8938e88e3cfb5ab57f8b0b24eef4c73bdb08d6fa5d0a9e4fbde140d1e810d1",
+    "content_sha256": "d8dd8c13ed3cb4dea4265f058ef3020eff2587a3ceb6e9eec743fc5f2ca138a0",
+    "execution_authorized": false,
+    "facts": {
+     "absences": [
+      {
+       "blocks": [],
+       "code": "NO_AVAILABILITY_CONTRACT",
+       "field": "resource_contracts",
+       "meaning": "no availability contract is installed for this resource, so a governed download is refused `resource availability contract required` (fail-closed, `docs/00_CONTRATO.md` §5)",
+       "why": "the provider's include globs cover `economic_calendar/**`, so the resource is discoverable (inventoried: True, MEASURED_FROM_A_LAKE_INVENTORY_SNAPSHOT), and `resource_contracts` carries no entry for it, so a governed download is refused `resource availability contract required` (fail-closed, docs/00_CONTRATO.md §5)"
+      },
+      {
+       "blocks": [
+        "CAL11"
+       ],
+       "code": "NO_CANCELLATION_STATE",
+       "field": "cancellation_state",
+       "meaning": "nothing distinguishes a release that did not happen from one this resource simply does not carry",
+       "why": "nothing distinguishes a release that did not happen from one this resource omits"
+      },
+      {
+       "blocks": [
+        "CAL03",
+        "CAL06"
+       ],
+       "code": "NO_CONSENSUS_AT_ALL",
+       "field": "consensus",
+       "meaning": "no column carries an expectation, so no surprise can be formed from this resource alone",
+       "why": "no column of these bytes carries an expectation of any release"
+      },
+      {
+       "blocks": [
+        "CAL02",
+        "CAL07",
+        "CAL08",
+        "CAL12"
+       ],
+       "code": "NO_PER_ROW_RECEIPT_CLOCK",
+       "field": "receipt_instant",
+       "meaning": "the only receipt clock is at FILE grain (the download's `acquired_at`), so it cannot order two releases inside the file and is never read as a per-release receipt",
+       "why": "the only receipt clock is the download's `acquired_at` (2026-05-01T23:38:43.550573+00:00), which is at FILE grain: it dates the whole acquisition, not any single release, so it cannot order two releases inside the file"
+      },
+      {
+       "blocks": [
+        "CAL05"
+       ],
+       "code": "NO_UNIT",
+       "field": "unit",
+       "meaning": "nothing in this resource says what its numbers are measured in, so a difference across two of them is arithmetic of unknown units",
+       "why": "NO_UNIT_COLUMN: nothing in this resource says what its numbers are measured in"
+      },
+      {
+       "blocks": [],
+       "code": "REVISION_HISTORY_UNDECIDABLE",
+       "field": "val",
+       "meaning": "values disagree at the finest key and the resource carries neither an observation clock nor a version field, so nothing in the bytes can tell a revision of one release from two releases sharing a key",
+       "why": "44 keys still carry two different values at the finest key this resource offers (currency, indicator, date, announcement_datetime, announcement_datetime_utc, pct_change_mom, pct_change_yoy, val_mom, pct_change_qoq, value), and the resource carries neither an observation clock nor a version field. Nothing in these bytes can tell a REVISION of one release from two distinct releases sharing a key, so this is reported as undecidable rather than counted as a vintage. How far the count fell between the coarsest and the finest rung is the measure of how much of it was key collision"
+      }
+     ],
+     "carries": {
+      "actual": true,
+      "actual_non_null_rows": 17961,
+      "consensus": false,
+      "consensus_column": null,
+      "consensus_non_null_rows": 0,
+      "consensus_overlap_with_an_observed_clock_source": {
+       "consensus_resources": [
+        "tests/data/economic_calendar_2011_2021.csv"
+       ],
+       "observed_clock_resources": [
+        "economic_calendar/release_actuals/fxmacrodata/announcements.parquet"
+       ],
+       "pairs": [
+        {
+         "consensus_resource": "tests/data/economic_calendar_2011_2021.csv",
+         "consensus_window": [
+          "2011-01-01",
+          "2021-04-26"
+         ],
+         "gap_days": 1326,
+         "observed_resource": "economic_calendar/release_actuals/fxmacrodata/announcements.parquet",
+         "observed_window": [
+          "2024-12-12T08:30:00+00:00",
+          "2026-05-01T23:36:47+00:00"
+         ],
+         "overlap": "NONE"
+        }
+       ],
+       "reading": "a surprise needs an expectation and an observed publication instant. Every consensus on this machine is in one window and every observed instant is in another, and the windows do not touch, so no row anywhere can carry both. That is why the event studies are NOT_IDENTIFIED, and it is a measured comparison of coverage windows rather than a judgement",
+       "verdict": "NO_CONSENSUS_SOURCE_OVERLAPS_AN_OBSERVED_CLOCK_SOURCE"
+      },
+      "previous_non_null_rows": 0,
+      "revision_history": "VINTAGE_UNDECIDABLE",
+      "revision_history_reading": "44 keys still carry two different values at the finest key this resource offers (currency, indicator, date, announcement_datetime, announcement_datetime_utc, pct_change_mom, pct_change_yoy, val_mom, pct_change_qoq, value), and the resource carries neither an observation clock nor a version field. Nothing in these bytes can tell a REVISION of one release from two distinct releases sharing a key, so this is reported as undecidable rather than counted as a vintage. How far the count fell between the coarsest and the finest rung is the measure of how much of it was key collision",
+      "schedule_only": false,
+      "unit_column": null,
+      "unit_values": []
+     },
+     "clock": {
+      "column": "announcement_datetime_utc",
+      "documented_by_the_source": true,
+      "eras": [],
+      "eras_determined": 0,
+      "eras_undetermined": 0,
+      "evidence": "TIMEZONE_AWARE_IN_THE_BYTES_AND_NAMED_UTC_BY_THE_PRODUCER",
+      "reading": "every value of this column carries an offset, so it names an instant without any declaration by this catalog. No era measurement was needed and none was made",
+      "timezone_aware_in_the_bytes": true
+     },
+     "coverage": {
+      "column": "announcement_datetime_utc",
+      "from": "2024-12-12T08:30:00+00:00",
+      "rows_with_a_value": 18015,
+      "rows_without_a_value": 132,
+      "status": "MEASURED",
+      "to": "2026-05-01T23:36:47+00:00",
+      "unit": "instant_utc"
+     },
+     "governed_delivery": {
+      "inventoried": true,
+      "inventoried_evidence": {
+       "evidence": "MEASURED_FROM_A_LAKE_INVENTORY_SNAPSHOT",
+       "inventoried": true,
+       "snapshot": {
+        "file": "inventory.after.json",
+        "sha256": "66f2aa5d06054904b4669c505f5b8d35b388cf04657a02169515d1e891894325"
+       },
+       "why": "the snapshot lists 10551 resources and this path is among them"
+      },
+      "lake": "financial_files",
+      "meaning": "inventoried by a lake and refused on download until a contract derived from producer evidence is installed",
+      "state": "CLOSED_NO_AVAILABILITY_CONTRACT",
+      "what_would_open_it": "an availability contract derived from producer evidence: what the available-time label denotes, the completion bound, the time-zone evidence and the use class, validated against these bytes",
+      "why": "the provider's include globs cover `economic_calendar/**`, so the resource is discoverable (inventoried: True, MEASURED_FROM_A_LAKE_INVENTORY_SNAPSHOT), and `resource_contracts` carries no entry for it, so a governed download is refused `resource availability contract required` (fail-closed, docs/00_CONTRATO.md §5)"
+     },
+     "measurement_provenance": {
+      "bytes_digest_reverified_at_registration": "d8dd8c13ed3cb4dea4265f058ef3020eff2587a3ceb6e9eec743fc5f2ca138a0",
+      "clock_artifact": null,
+      "inventory_artifact": {
+       "path": "inventory.json",
+       "schema": "m5phet.calendar_inventory.v1",
+       "sha256": "5dd3af2c77e133bb1a29f562446677fb8d9b43f22b65a1a90eafe2f5988c9d17"
+      },
+      "reading": "every count, role, unit and vintage verdict above comes from the inventory artifact; the era offsets come from the clock artifact; the coverage window and the bytes digest were re-measured by this tool on the file itself",
+      "tool": "data_gov.tools.register_calendar_resources.v1"
+     },
+     "physical_location": {
+      "bytes": 185559,
+      "format": "parquet",
+      "lake": "financial_files",
+      "reading": "the path is relative to the root it belongs to; the absolute path of the root is deliberately not registered -- it is host configuration, not a fact about the resource",
+      "resource_path_in_root": "economic_calendar/release_actuals/fxmacrodata/announcements.parquet",
+      "root_kind": "financial_data_root",
+      "rows": 18147
+     },
+     "publication_instant": {
+      "column": "announcement_datetime_utc",
+      "kind": "OBSERVED_ACTUAL_PUBLICATION",
+      "meaning": "the resource records the instant the ACTUAL was published and somebody observed it",
+      "observed": true,
+      "why": "`announcement_datetime_utc` is timezone-aware in the bytes and is the instant the source says the actual was announced; it is the observed publication clock the archive's own clock was measured against"
+     },
+     "source_documentation": {
+      "file": "economic_calendar/release_actuals/fxmacrodata/README.md",
+      "reading": "the producer's README states: 'Historical macro announcement values with no-lookahead announcement timestamps. Consensus/forecast fields are not present unless supplied by the provider payload.'"
+     },
+     "study_refusal": {
+      "code": "OBSERVED_PUBLICATION_WITHOUT_CONSENSUS",
+      "reading": "this resource observes when actuals were announced and carries no expectation, so no surprise can be formed from it alone; it can only date a surprise computed elsewhere"
+     },
+     "what_it_is": "Historical macro announcement values with no-lookahead announcement timestamps. It is the only resource on this machine whose publication instants somebody observed."
+    },
+    "facts_sha256": "4cab618ee83fa3541938afc041b4f3ad42dcf1c299fa0a8b8e77f50e1d03696f",
+    "lake": "financial_files",
+    "receipt_clock_reading": "`registered_at` is OUTSIDE the key: it dates this reading of the resource, not the resource. Reading the same bytes and declaring the same facts again collides on the key and is a DUPLICATE, so a catalog sweep never manufactures revisions",
+    "registered_at": "2026-09-26T07:10:00+00:00",
+    "registered_by": "satoshi-iii",
+    "registration_grants": "NOTHING: registering a resource records what is known and missing about it. It does not authorize a delivery, does not install an availability contract and does not make an absent fact present",
+    "registration_identity": {
+     "content_sha256": "d8dd8c13ed3cb4dea4265f058ef3020eff2587a3ceb6e9eec743fc5f2ca138a0",
+     "facts_sha256": "4cab618ee83fa3541938afc041b4f3ad42dcf1c299fa0a8b8e77f50e1d03696f"
+    },
+    "registration_sha256": "5df17f6456d747b3605d04cebb8e8c56d95956bfc2e2565d25fb4cb779a6d5c9",
+    "resource": "economic_calendar/release_actuals/fxmacrodata/announcements.parquet",
+    "revision_index": 2,
+    "row_id": "98de0d3bad83bd1f79bacc35d64fd6363f3353adbc0f8050e341697c8eda4aea",
+    "row_sha256": "82270772f1583d788dbb35fbfca8f293199ba76b1803a229195f4d582a8e3ea2",
+    "schema": "data_gov.resource_registration.v1",
+    "supersedes": [
+     "54dd3a49b41f0a37017a5493c26291d15a54fd74b62470fd27585278fcfe32d8",
+     "82d9cc2a908c7efc1e1957d1989b2eeb56a915b5641ecf30492cbc447c4d4dbb"
+    ],
+    "supersedes_reading": "later knowledge about the same resource. The superseded rows are retained and stay true of the moment they were registered, which is what `known_at` reads them back for"
+   },
+   "row_id": "98de0d3bad83bd1f79bacc35d64fd6363f3353adbc0f8050e341697c8eda4aea",
+   "row_sha256": "82270772f1583d788dbb35fbfca8f293199ba76b1803a229195f4d582a8e3ea2"
+  },
+  {
+   "absences": [
+    "NO_AVAILABILITY_CONTRACT",
+    "NO_CANCELLATION_STATE",
+    "NO_CONSENSUS_AT_ALL",
+    "NO_PER_ROW_RECEIPT_CLOCK",
+    "NO_PUBLICATION_CLOCK",
+    "NO_REFERENCE_PERIOD",
+    "NO_UNIT"
+   ],
+   "catalog_key": "029e3ce955943c39b6f4675bf4389ec43921e1c063ba74533fd82bfebe4f84c8",
+   "content_sha256": "8a50bf16ef06a423015a67b777a3e5feb961891b3506c39de27535f0471db226",
+   "disposition": "REVISION",
+   "facts_sha256": "28bba69e2e11144dfb7f063b442f9196b4f2637ff2911bb6c9a8a9b05b296add",
+   "inventory_name": "fxmacrodata_release_calendar",
+   "resource": "economic_calendar/scheduled_events/fxmacrodata/release_calendar.parquet",
+   "revision_index": 2,
+   "row": {
+    "catalog_identity": {
+     "lake": "financial_files",
+     "resource": "economic_calendar/scheduled_events/fxmacrodata/release_calendar.parquet"
+    },
+    "catalog_key": "029e3ce955943c39b6f4675bf4389ec43921e1c063ba74533fd82bfebe4f84c8",
+    "content_sha256": "8a50bf16ef06a423015a67b777a3e5feb961891b3506c39de27535f0471db226",
+    "execution_authorized": false,
+    "facts": {
+     "absences": [
+      {
+       "blocks": [],
+       "code": "NO_AVAILABILITY_CONTRACT",
+       "field": "resource_contracts",
+       "meaning": "no availability contract is installed for this resource, so a governed download is refused `resource availability contract required` (fail-closed, `docs/00_CONTRATO.md` §5)",
+       "why": "the provider's include globs cover `economic_calendar/**`, so the resource is discoverable (inventoried: True, MEASURED_FROM_A_LAKE_INVENTORY_SNAPSHOT), and `resource_contracts` carries no entry for it, so a governed download is refused `resource availability contract required` (fail-closed, docs/00_CONTRATO.md §5)"
+      },
+      {
+       "blocks": [
+        "CAL11"
+       ],
+       "code": "NO_CANCELLATION_STATE",
+       "field": "cancellation_state",
+       "meaning": "nothing distinguishes a release that did not happen from one this resource simply does not carry",
+       "why": "nothing distinguishes a release that did not happen from one this resource omits"
+      },
+      {
+       "blocks": [
+        "CAL03",
+        "CAL06"
+       ],
+       "code": "NO_CONSENSUS_AT_ALL",
+       "field": "consensus",
+       "meaning": "no column carries an expectation, so no surprise can be formed from this resource alone",
+       "why": "no column of these bytes carries an expectation of any release"
+      },
+      {
+       "blocks": [
+        "CAL02",
+        "CAL07",
+        "CAL08",
+        "CAL12"
+       ],
+       "code": "NO_PER_ROW_RECEIPT_CLOCK",
+       "field": "receipt_instant",
+       "meaning": "the only receipt clock is at FILE grain (the download's `acquired_at`), so it cannot order two releases inside the file and is never read as a per-release receipt",
+       "why": "the only receipt clock is the download's `acquired_at` (2026-05-01T23:38:43.532056+00:00), which is at FILE grain: it dates the whole acquisition, not any single release, so it cannot order two releases inside the file"
+      },
+      {
+       "blocks": [
+        "CAL02",
+        "CAL03",
+        "CAL10"
+       ],
+       "code": "NO_PUBLICATION_CLOCK",
+       "field": "publication_instant",
+       "meaning": "no column in these bytes records when a value became public; any release instant taken from this resource is assumed, never observed",
+       "why": "no column of these bytes is an instant at which a value became public; the inventory found the role absent over all 896 rows. every instant here is a SCHEDULE for a release that had not happened when the file was acquired; nothing in it is an observation of a publication"
+      },
+      {
+       "blocks": [
+        "CAL05"
+       ],
+       "code": "NO_REFERENCE_PERIOD",
+       "field": "reference_period",
+       "meaning": "no column says which period a value refers to, so two series cannot be checked for comparability",
+       "why": "no column says which period a value refers to, so comparability cannot be checked"
+      },
+      {
+       "blocks": [
+        "CAL05"
+       ],
+       "code": "NO_UNIT",
+       "field": "unit",
+       "meaning": "nothing in this resource says what its numbers are measured in, so a difference across two of them is arithmetic of unknown units",
+       "why": "NO_UNIT_COLUMN: nothing in this resource says what its numbers are measured in"
+      }
+     ],
+     "carries": {
+      "actual": false,
+      "actual_non_null_rows": 0,
+      "consensus": false,
+      "consensus_column": null,
+      "consensus_non_null_rows": 0,
+      "consensus_overlap_with_an_observed_clock_source": {
+       "consensus_resources": [
+        "tests/data/economic_calendar_2011_2021.csv"
+       ],
+       "observed_clock_resources": [
+        "economic_calendar/release_actuals/fxmacrodata/announcements.parquet"
+       ],
+       "pairs": [
+        {
+         "consensus_resource": "tests/data/economic_calendar_2011_2021.csv",
+         "consensus_window": [
+          "2011-01-01",
+          "2021-04-26"
+         ],
+         "gap_days": 1326,
+         "observed_resource": "economic_calendar/release_actuals/fxmacrodata/announcements.parquet",
+         "observed_window": [
+          "2024-12-12T08:30:00+00:00",
+          "2026-05-01T23:36:47+00:00"
+         ],
+         "overlap": "NONE"
+        }
+       ],
+       "reading": "a surprise needs an expectation and an observed publication instant. Every consensus on this machine is in one window and every observed instant is in another, and the windows do not touch, so no row anywhere can carry both. That is why the event studies are NOT_IDENTIFIED, and it is a measured comparison of coverage windows rather than a judgement",
+       "verdict": "NO_CONSENSUS_SOURCE_OVERLAPS_AN_OBSERVED_CLOCK_SOURCE"
+      },
+      "previous_non_null_rows": 0,
+      "revision_history": "NOT_APPLICABLE_NO_VALUE_COLUMN",
+      "revision_history_reading": "this resource carries schedules, not values, so it has no field to revise",
+      "schedule_only": true,
+      "unit_column": null,
+      "unit_values": []
+     },
+     "clock": {
+      "column": "announcement_datetime_utc",
+      "documented_by_the_source": true,
+      "eras": [],
+      "eras_determined": 0,
+      "eras_undetermined": 0,
+      "evidence": "TIMEZONE_AWARE_IN_THE_BYTES_AND_NAMED_UTC_BY_THE_PRODUCER",
+      "reading": "every value of this column carries an offset, so it names an instant without any declaration by this catalog. No era measurement was needed and none was made",
+      "timezone_aware_in_the_bytes": true
+     },
+     "coverage": {
+      "column": "announcement_datetime_utc",
+      "from": "2026-02-05T12:00:00+00:00",
+      "rows_with_a_value": 896,
+      "rows_without_a_value": 0,
+      "status": "MEASURED",
+      "to": "2027-07-14T18:00:00+00:00",
+      "unit": "instant_utc"
+     },
+     "governed_delivery": {
+      "inventoried": true,
+      "inventoried_evidence": {
+       "evidence": "MEASURED_FROM_A_LAKE_INVENTORY_SNAPSHOT",
+       "inventoried": true,
+       "snapshot": {
+        "file": "inventory.after.json",
+        "sha256": "66f2aa5d06054904b4669c505f5b8d35b388cf04657a02169515d1e891894325"
+       },
+       "why": "the snapshot lists 10551 resources and this path is among them"
+      },
+      "lake": "financial_files",
+      "meaning": "inventoried by a lake and refused on download until a contract derived from producer evidence is installed",
+      "state": "CLOSED_NO_AVAILABILITY_CONTRACT",
+      "what_would_open_it": "an availability contract derived from producer evidence: what the available-time label denotes, the completion bound, the time-zone evidence and the use class, validated against these bytes",
+      "why": "the provider's include globs cover `economic_calendar/**`, so the resource is discoverable (inventoried: True, MEASURED_FROM_A_LAKE_INVENTORY_SNAPSHOT), and `resource_contracts` carries no entry for it, so a governed download is refused `resource availability contract required` (fail-closed, docs/00_CONTRATO.md §5)"
+     },
+     "measurement_provenance": {
+      "bytes_digest_reverified_at_registration": "8a50bf16ef06a423015a67b777a3e5feb961891b3506c39de27535f0471db226",
+      "clock_artifact": null,
+      "inventory_artifact": {
+       "path": "inventory.json",
+       "schema": "m5phet.calendar_inventory.v1",
+       "sha256": "5dd3af2c77e133bb1a29f562446677fb8d9b43f22b65a1a90eafe2f5988c9d17"
+      },
+      "reading": "every count, role, unit and vintage verdict above comes from the inventory artifact; the era offsets come from the clock artifact; the coverage window and the bytes digest were re-measured by this tool on the file itself",
+      "tool": "data_gov.tools.register_calendar_resources.v1"
+     },
+     "physical_location": {
+      "bytes": 17507,
+      "format": "parquet",
+      "lake": "financial_files",
+      "reading": "the path is relative to the root it belongs to; the absolute path of the root is deliberately not registered -- it is host configuration, not a fact about the resource",
+      "resource_path_in_root": "economic_calendar/scheduled_events/fxmacrodata/release_calendar.parquet",
+      "root_kind": "financial_data_root",
+      "rows": 896
+     },
+     "publication_instant": {
+      "column": "announcement_datetime_utc",
+      "kind": "ASSUMED_SCHEDULED_PUBLICATION",
+      "meaning": "the resource records only a scheduled instant; treating it as the publication instant is an operator's assumption and nothing estimated under it is identified",
+      "observed": false,
+      "why": "every instant here is a SCHEDULE for a release that had not happened when the file was acquired; nothing in it is an observation of a publication"
+     },
+     "source_documentation": {
+      "file": "economic_calendar/scheduled_events/fxmacrodata/README.md",
+      "reading": "the producer's README states: 'Upcoming macro release calendar with announcement timestamps for supported currencies.'"
+     },
+     "study_refusal": {
+      "code": "NEITHER_CONSENSUS_NOR_OBSERVED_PUBLICATION",
+      "reading": "this resource carries neither half of a surprise: no expectation, and no observed instant at which anything became public"
+     },
+     "what_it_is": "A forward-looking release schedule: when supported currencies' macro releases are scheduled to be announced. It carries no value of any kind -- neither a consensus nor an actual."
+    },
+    "facts_sha256": "28bba69e2e11144dfb7f063b442f9196b4f2637ff2911bb6c9a8a9b05b296add",
+    "lake": "financial_files",
+    "receipt_clock_reading": "`registered_at` is OUTSIDE the key: it dates this reading of the resource, not the resource. Reading the same bytes and declaring the same facts again collides on the key and is a DUPLICATE, so a catalog sweep never manufactures revisions",
+    "registered_at": "2026-09-26T07:10:00+00:00",
+    "registered_by": "satoshi-iii",
+    "registration_grants": "NOTHING: registering a resource records what is known and missing about it. It does not authorize a delivery, does not install an availability contract and does not make an absent fact present",
+    "registration_identity": {
+     "content_sha256": "8a50bf16ef06a423015a67b777a3e5feb961891b3506c39de27535f0471db226",
+     "facts_sha256": "28bba69e2e11144dfb7f063b442f9196b4f2637ff2911bb6c9a8a9b05b296add"
+    },
+    "registration_sha256": "6f4f4054053af1e8dc0c31fc36a6435988f57bbfff1b1a82822e2a0f6106652c",
+    "resource": "economic_calendar/scheduled_events/fxmacrodata/release_calendar.parquet",
+    "revision_index": 2,
+    "row_id": "0aad71636f9d5aa1c871be7e35e756956ad1929e60b29d86693170db8a40141f",
+    "row_sha256": "a734ec457ba4b36eb01884ef8aec274dfe608830d33f76166b7fc513a0aab466",
+    "schema": "data_gov.resource_registration.v1",
+    "supersedes": [
+     "3731a72a924125db14e266bd7be1bce492f69dcfa3257b01ce602f87f57fa2e9",
+     "b4e6e336e3e68e9e98db9cde5003f3d4cb3bf8f2ca98f6cd75f9bbb7030b3d33"
+    ],
+    "supersedes_reading": "later knowledge about the same resource. The superseded rows are retained and stay true of the moment they were registered, which is what `known_at` reads them back for"
+   },
+   "row_id": "0aad71636f9d5aa1c871be7e35e756956ad1929e60b29d86693170db8a40141f",
+   "row_sha256": "a734ec457ba4b36eb01884ef8aec274dfe608830d33f76166b7fc513a0aab466"
+  },
+  {
+   "absences": [
+    "CONSENSUS_COLUMN_PRESENT_BUT_EMPTY",
+    "NO_AVAILABILITY_CONTRACT",
+    "NO_CANCELLATION_STATE",
+    "NO_PER_ROW_RECEIPT_CLOCK",
+    "NO_PUBLICATION_CLOCK",
+    "NO_REFERENCE_PERIOD",
+    "NO_REVISION_HISTORY",
+    "NO_TIMEZONE_DECLARED_BY_THE_SOURCE",
+    "NO_UNIT"
+   ],
+   "catalog_key": "5c995ff6cbec74013d98f411529cc802c985341ace99a30b03068bd0f3f145e0",
+   "content_sha256": "c683be065f7a0fb3d4bdded8505012edb0301468482e8ded584f91dc0399004b",
+   "disposition": "REVISION",
+   "facts_sha256": "8827d8a95d047e3a47c150ed150f4d8fab62ebb2e2de795f60cd9c8f9aa6fb4f",
+   "inventory_name": "fred_release_date_proxy",
+   "resource": "economic_calendar/scheduled_events/fred_release_date_proxy/scheduled_events.parquet",
+   "revision_index": 2,
+   "row": {
+    "catalog_identity": {
+     "lake": "financial_files",
+     "resource": "economic_calendar/scheduled_events/fred_release_date_proxy/scheduled_events.parquet"
+    },
+    "catalog_key": "5c995ff6cbec74013d98f411529cc802c985341ace99a30b03068bd0f3f145e0",
+    "content_sha256": "c683be065f7a0fb3d4bdded8505012edb0301468482e8ded584f91dc0399004b",
+    "execution_authorized": false,
+    "facts": {
+     "absences": [
+      {
+       "blocks": [
+        "CAL03",
+        "CAL06"
+       ],
+       "code": "CONSENSUS_COLUMN_PRESENT_BUT_EMPTY",
+       "field": "consensus_estimate",
+       "meaning": "a consensus column exists and every row is null, which is the same absence as a missing column for any use that needs a value, and a worse one because the schema looks complete",
+       "why": "the column 'consensus_estimate' exists and is null in every one of 1200 rows"
+      },
+      {
+       "blocks": [],
+       "code": "NO_AVAILABILITY_CONTRACT",
+       "field": "resource_contracts",
+       "meaning": "no availability contract is installed for this resource, so a governed download is refused `resource availability contract required` (fail-closed, `docs/00_CONTRATO.md` §5)",
+       "why": "the provider's include globs cover `economic_calendar/**`, so the resource is discoverable (inventoried: True, MEASURED_FROM_A_LAKE_INVENTORY_SNAPSHOT), and `resource_contracts` carries no entry for it, so a governed download is refused `resource availability contract required` (fail-closed, docs/00_CONTRATO.md §5)"
+      },
+      {
+       "blocks": [
+        "CAL11"
+       ],
+       "code": "NO_CANCELLATION_STATE",
+       "field": "cancellation_state",
+       "meaning": "nothing distinguishes a release that did not happen from one this resource simply does not carry",
+       "why": "nothing distinguishes a release that did not happen from one this resource omits"
+      },
+      {
+       "blocks": [
+        "CAL02",
+        "CAL07",
+        "CAL08",
+        "CAL12"
+       ],
+       "code": "NO_PER_ROW_RECEIPT_CLOCK",
+       "field": "receipt_instant",
+       "meaning": "the only receipt clock is at FILE grain (the download's `acquired_at`), so it cannot order two releases inside the file and is never read as a per-release receipt",
+       "why": "the only receipt clock is the download's `acquired_at` (2026-05-01T21:19:26.305849+00:00), which is at FILE grain: it dates the whole acquisition, not any single release, so it cannot order two releases inside the file"
+      },
+      {
+       "blocks": [
+        "CAL02",
+        "CAL03",
+        "CAL10"
+       ],
+       "code": "NO_PUBLICATION_CLOCK",
+       "field": "publication_instant",
+       "meaning": "no column in these bytes records when a value became public; any release instant taken from this resource is assumed, never observed",
+       "why": "no column of these bytes is an instant at which a value became public; the inventory found the role absent over all 1200 rows. `scheduled_date_proxy` is a DATE, not an instant, and the resource's own `source_note` says it is 'generated from FRED actual observation dates'. It is a proxy derived from the value's reference date, so it is weaker than a schedule: a release published weeks after its reference period carries the reference period's date here"
+      },
+      {
+       "blocks": [
+        "CAL05"
+       ],
+       "code": "NO_REFERENCE_PERIOD",
+       "field": "reference_period",
+       "meaning": "no column says which period a value refers to, so two series cannot be checked for comparability",
+       "why": "no column says which period a value refers to, so comparability cannot be checked"
+      },
+      {
+       "blocks": [],
+       "code": "NO_REVISION_HISTORY",
+       "field": "actual",
+       "meaning": "at the finest key this resource offers every key carries one value, so no earlier version of any field survives and a point-in-time view cannot be reconstructed from these bytes",
+       "why": "at the finest key this resource offers (index, event_slug, event_name, scheduled_date_proxy, fred_series, transformed_actual, consensus_estimate, surprise, source_note) every key carries one value, so no earlier version of any field survives here and a point-in-time view cannot be reconstructed from these bytes"
+      },
+      {
+       "blocks": [],
+       "code": "NO_TIMEZONE_DECLARED_BY_THE_SOURCE",
+       "field": "scheduled_date_proxy",
+       "meaning": "the producer states no time zone for this clock column; whatever zone is used downstream is a declaration by this catalog and not a fact of the source",
+       "why": "the column 'scheduled_date_proxy' is naive in the bytes and the producer states no zone for it. Whatever zone is used downstream is a declaration of this catalog, never a fact of the source; no measurement was made for this column either, so the catalog declares no zone rather than reading it as UTC"
+      },
+      {
+       "blocks": [
+        "CAL05"
+       ],
+       "code": "NO_UNIT",
+       "field": "unit",
+       "meaning": "nothing in this resource says what its numbers are measured in, so a difference across two of them is arithmetic of unknown units",
+       "why": "NO_UNIT_COLUMN: nothing in this resource says what its numbers are measured in"
+      }
+     ],
+     "carries": {
+      "actual": true,
+      "actual_non_null_rows": 1192,
+      "consensus": false,
+      "consensus_column": "consensus_estimate",
+      "consensus_non_null_rows": 0,
+      "consensus_overlap_with_an_observed_clock_source": {
+       "consensus_resources": [
+        "tests/data/economic_calendar_2011_2021.csv"
+       ],
+       "observed_clock_resources": [
+        "economic_calendar/release_actuals/fxmacrodata/announcements.parquet"
+       ],
+       "pairs": [
+        {
+         "consensus_resource": "tests/data/economic_calendar_2011_2021.csv",
+         "consensus_window": [
+          "2011-01-01",
+          "2021-04-26"
+         ],
+         "gap_days": 1326,
+         "observed_resource": "economic_calendar/release_actuals/fxmacrodata/announcements.parquet",
+         "observed_window": [
+          "2024-12-12T08:30:00+00:00",
+          "2026-05-01T23:36:47+00:00"
+         ],
+         "overlap": "NONE"
+        }
+       ],
+       "reading": "a surprise needs an expectation and an observed publication instant. Every consensus on this machine is in one window and every observed instant is in another, and the windows do not touch, so no row anywhere can carry both. That is why the event studies are NOT_IDENTIFIED, and it is a measured comparison of coverage windows rather than a judgement",
+       "verdict": "NO_CONSENSUS_SOURCE_OVERLAPS_AN_OBSERVED_CLOCK_SOURCE"
+      },
+      "previous_non_null_rows": 0,
+      "revision_history": "NO_VINTAGES",
+      "revision_history_reading": "at the finest key this resource offers (index, event_slug, event_name, scheduled_date_proxy, fred_series, transformed_actual, consensus_estimate, surprise, source_note) every key carries one value, so no earlier version of any field survives here and a point-in-time view cannot be reconstructed from these bytes",
+      "schedule_only": false,
+      "unit_column": null,
+      "unit_values": []
+     },
+     "clock": {
+      "column": "scheduled_date_proxy",
+      "documented_by_the_source": false,
+      "eras": [],
+      "eras_determined": 0,
+      "eras_status": "NOT_MEASURED",
+      "eras_undetermined": 0,
+      "evidence": "UNKNOWN",
+      "reading": "a naive column with no producer statement of zone. No era measurement was made for this resource: the clock job measures an archive against observed publication conventions, and this column is a reference period or a derived date rather than a release wall clock, so there is no convention to measure it against. It stays UNKNOWN rather than being read as UTC",
+      "timezone_aware_in_the_bytes": false
+     },
+     "coverage": {
+      "column": "scheduled_date_proxy",
+      "from": "1996-01-01T00:00:00",
+      "rows_with_a_value": 1200,
+      "rows_without_a_value": 0,
+      "status": "MEASURED",
+      "to": "2025-12-31T00:00:00",
+      "unit": "naive_wall_clock"
+     },
+     "governed_delivery": {
+      "inventoried": true,
+      "inventoried_evidence": {
+       "evidence": "MEASURED_FROM_A_LAKE_INVENTORY_SNAPSHOT",
+       "inventoried": true,
+       "snapshot": {
+        "file": "inventory.after.json",
+        "sha256": "66f2aa5d06054904b4669c505f5b8d35b388cf04657a02169515d1e891894325"
+       },
+       "why": "the snapshot lists 10551 resources and this path is among them"
+      },
+      "lake": "financial_files",
+      "meaning": "inventoried by a lake and refused on download until a contract derived from producer evidence is installed",
+      "state": "CLOSED_NO_AVAILABILITY_CONTRACT",
+      "what_would_open_it": "an availability contract derived from producer evidence: what the available-time label denotes, the completion bound, the time-zone evidence and the use class, validated against these bytes",
+      "why": "the provider's include globs cover `economic_calendar/**`, so the resource is discoverable (inventoried: True, MEASURED_FROM_A_LAKE_INVENTORY_SNAPSHOT), and `resource_contracts` carries no entry for it, so a governed download is refused `resource availability contract required` (fail-closed, docs/00_CONTRATO.md §5)"
+     },
+     "measurement_provenance": {
+      "bytes_digest_reverified_at_registration": "c683be065f7a0fb3d4bdded8505012edb0301468482e8ded584f91dc0399004b",
+      "clock_artifact": null,
+      "inventory_artifact": {
+       "path": "inventory.json",
+       "schema": "m5phet.calendar_inventory.v1",
+       "sha256": "5dd3af2c77e133bb1a29f562446677fb8d9b43f22b65a1a90eafe2f5988c9d17"
+      },
+      "reading": "every count, role, unit and vintage verdict above comes from the inventory artifact; the era offsets come from the clock artifact; the coverage window and the bytes digest were re-measured by this tool on the file itself",
+      "tool": "data_gov.tools.register_calendar_resources.v1"
+     },
+     "physical_location": {
+      "bytes": 29936,
+      "format": "parquet",
+      "lake": "financial_files",
+      "reading": "the path is relative to the root it belongs to; the absolute path of the root is deliberately not registered -- it is host configuration, not a fact about the resource",
+      "resource_path_in_root": "economic_calendar/scheduled_events/fred_release_date_proxy/scheduled_events.parquet",
+      "root_kind": "financial_data_root",
+      "rows": 1200
+     },
+     "publication_instant": {
+      "column": "scheduled_date_proxy",
+      "kind": "ASSUMED_SCHEDULED_PUBLICATION",
+      "meaning": "the resource records only a scheduled instant; treating it as the publication instant is an operator's assumption and nothing estimated under it is identified",
+      "observed": false,
+      "why": "`scheduled_date_proxy` is a DATE, not an instant, and the resource's own `source_note` says it is 'generated from FRED actual observation dates'. It is a proxy derived from the value's reference date, so it is weaker than a schedule: a release published weeks after its reference period carries the reference period's date here"
+     },
+     "source_documentation": {
+      "file": "economic_calendar/scheduled_events/fred_release_date_proxy/README.md",
+      "reading": null
+     },
+     "study_refusal": {
+      "code": "NEITHER_CONSENSUS_NOR_OBSERVED_PUBLICATION",
+      "reading": "this resource carries neither half of a surprise: no expectation, and no observed instant at which anything became public"
+     },
+     "what_it_is": "A derived stand-in for a release calendar: FRED actuals re-labelled with the observation date of the value as if it were the release date. It is not a schedule anybody published."
+    },
+    "facts_sha256": "8827d8a95d047e3a47c150ed150f4d8fab62ebb2e2de795f60cd9c8f9aa6fb4f",
+    "lake": "financial_files",
+    "receipt_clock_reading": "`registered_at` is OUTSIDE the key: it dates this reading of the resource, not the resource. Reading the same bytes and declaring the same facts again collides on the key and is a DUPLICATE, so a catalog sweep never manufactures revisions",
+    "registered_at": "2026-09-26T07:10:00+00:00",
+    "registered_by": "satoshi-iii",
+    "registration_grants": "NOTHING: registering a resource records what is known and missing about it. It does not authorize a delivery, does not install an availability contract and does not make an absent fact present",
+    "registration_identity": {
+     "content_sha256": "c683be065f7a0fb3d4bdded8505012edb0301468482e8ded584f91dc0399004b",
+     "facts_sha256": "8827d8a95d047e3a47c150ed150f4d8fab62ebb2e2de795f60cd9c8f9aa6fb4f"
+    },
+    "registration_sha256": "235cb0666b672881f347096f9de7bbb183fa215a8d50ee2457204000886ef824",
+    "resource": "economic_calendar/scheduled_events/fred_release_date_proxy/scheduled_events.parquet",
+    "revision_index": 2,
+    "row_id": "c09e1b46794b646176638090e50dfbf8f7f666890bee08d528443b60d67e1ef0",
+    "row_sha256": "fb0106b36b7cd23a33bd95a739ee2174366bb9372b66a145644fcf5ef8247f58",
+    "schema": "data_gov.resource_registration.v1",
+    "supersedes": [
+     "7d55a904e6db3f75916116bc1ffa7b8c468bf52596bfa6f2d272daa51a453eae",
+     "a73489d10c7451105c7144f44e3e9d66b74f3d8f801af2a50d645eecc69f3633"
+    ],
+    "supersedes_reading": "later knowledge about the same resource. The superseded rows are retained and stay true of the moment they were registered, which is what `known_at` reads them back for"
+   },
+   "row_id": "c09e1b46794b646176638090e50dfbf8f7f666890bee08d528443b60d67e1ef0",
+   "row_sha256": "fb0106b36b7cd23a33bd95a739ee2174366bb9372b66a145644fcf5ef8247f58"
+  },
+  {
+   "absences": [
+    "CONSENSUS_COLUMN_PRESENT_BUT_EMPTY",
+    "NO_AVAILABILITY_CONTRACT",
+    "NO_CANCELLATION_STATE",
+    "NO_PER_ROW_RECEIPT_CLOCK",
+    "NO_PUBLICATION_CLOCK",
+    "NO_REVISION_HISTORY",
+    "NO_TIMEZONE_DECLARED_BY_THE_SOURCE"
+   ],
+   "catalog_key": "24b243d10f1e0124ae9246ffd69db4d58517531f5d86f7cd2b8614cdac887d65",
+   "content_sha256": "aed1d669ee32b37c202c0c191d45deb3179a64dd33757e4c0c336af093b106fd",
+   "disposition": "REVISION",
+   "facts_sha256": "5478ebe8e3ff9edd9a940384559754e9b1bab296608d9b185d12f50e82beea3a",
+   "inventory_name": "fred_cpi_yoy_actuals",
+   "resource": "economic_calendar/release_actuals/cpi_yoy/actuals.parquet",
+   "revision_index": 2,
+   "row": {
+    "catalog_identity": {
+     "lake": "financial_files",
+     "resource": "economic_calendar/release_actuals/cpi_yoy/actuals.parquet"
+    },
+    "catalog_key": "24b243d10f1e0124ae9246ffd69db4d58517531f5d86f7cd2b8614cdac887d65",
+    "content_sha256": "aed1d669ee32b37c202c0c191d45deb3179a64dd33757e4c0c336af093b106fd",
+    "execution_authorized": false,
+    "facts": {
+     "absences": [
+      {
+       "blocks": [
+        "CAL03",
+        "CAL06"
+       ],
+       "code": "CONSENSUS_COLUMN_PRESENT_BUT_EMPTY",
+       "field": "consensus_estimate",
+       "meaning": "a consensus column exists and every row is null, which is the same absence as a missing column for any use that needs a value, and a worse one because the schema looks complete",
+       "why": "the column 'consensus_estimate' exists and is null in every one of 432 rows"
+      },
+      {
+       "blocks": [],
+       "code": "NO_AVAILABILITY_CONTRACT",
+       "field": "resource_contracts",
+       "meaning": "no availability contract is installed for this resource, so a governed download is refused `resource availability contract required` (fail-closed, `docs/00_CONTRATO.md` §5)",
+       "why": "the provider's include globs cover `economic_calendar/**`, so the resource is discoverable (inventoried: True, MEASURED_FROM_A_LAKE_INVENTORY_SNAPSHOT), and `resource_contracts` carries no entry for it, so a governed download is refused `resource availability contract required` (fail-closed, docs/00_CONTRATO.md §5)"
+      },
+      {
+       "blocks": [
+        "CAL11"
+       ],
+       "code": "NO_CANCELLATION_STATE",
+       "field": "cancellation_state",
+       "meaning": "nothing distinguishes a release that did not happen from one this resource simply does not carry",
+       "why": "nothing distinguishes a release that did not happen from one this resource omits"
+      },
+      {
+       "blocks": [
+        "CAL02",
+        "CAL07",
+        "CAL08",
+        "CAL12"
+       ],
+       "code": "NO_PER_ROW_RECEIPT_CLOCK",
+       "field": "receipt_instant",
+       "meaning": "the only receipt clock is at FILE grain (the download's `acquired_at`), so it cannot order two releases inside the file and is never read as a per-release receipt",
+       "why": "the only receipt clock is the download's `acquired_at` (2026-05-01T16:42:56.525729+00:00), which is at FILE grain: it dates the whole acquisition, not any single release, so it cannot order two releases inside the file"
+      },
+      {
+       "blocks": [
+        "CAL02",
+        "CAL03",
+        "CAL10"
+       ],
+       "code": "NO_PUBLICATION_CLOCK",
+       "field": "publication_instant",
+       "meaning": "no column in these bytes records when a value became public; any release instant taken from this resource is assumed, never observed",
+       "why": "no column of these bytes is an instant at which a value became public; the inventory found the role absent over all 432 rows. the only time column is `date`, the REFERENCE PERIOD of the value. Nothing in the file says when the number was released, and the reference month is not a release date"
+      },
+      {
+       "blocks": [],
+       "code": "NO_REVISION_HISTORY",
+       "field": "actual",
+       "meaning": "at the finest key this resource offers every key carries one value, so no earlier version of any field survives and a point-in-time view cannot be reconstructed from these bytes",
+       "why": "at the finest key this resource offers (date, event_name, fred_series, transform, transformed_actual, consensus_estimate, surprise, source_note) every key carries one value, so no earlier version of any field survives here and a point-in-time view cannot be reconstructed from these bytes"
+      },
+      {
+       "blocks": [],
+       "code": "NO_TIMEZONE_DECLARED_BY_THE_SOURCE",
+       "field": "date",
+       "meaning": "the producer states no time zone for this clock column; whatever zone is used downstream is a declaration by this catalog and not a fact of the source",
+       "why": "the column 'date' is naive in the bytes and the producer states no zone for it. Whatever zone is used downstream is a declaration of this catalog, never a fact of the source; no measurement was made for this column either, so the catalog declares no zone rather than reading it as UTC"
+      }
+     ],
+     "carries": {
+      "actual": true,
+      "actual_non_null_rows": 431,
+      "consensus": false,
+      "consensus_column": "consensus_estimate",
+      "consensus_non_null_rows": 0,
+      "consensus_overlap_with_an_observed_clock_source": {
+       "consensus_resources": [
+        "tests/data/economic_calendar_2011_2021.csv"
+       ],
+       "observed_clock_resources": [
+        "economic_calendar/release_actuals/fxmacrodata/announcements.parquet"
+       ],
+       "pairs": [
+        {
+         "consensus_resource": "tests/data/economic_calendar_2011_2021.csv",
+         "consensus_window": [
+          "2011-01-01",
+          "2021-04-26"
+         ],
+         "gap_days": 1326,
+         "observed_resource": "economic_calendar/release_actuals/fxmacrodata/announcements.parquet",
+         "observed_window": [
+          "2024-12-12T08:30:00+00:00",
+          "2026-05-01T23:36:47+00:00"
+         ],
+         "overlap": "NONE"
+        }
+       ],
+       "reading": "a surprise needs an expectation and an observed publication instant. Every consensus on this machine is in one window and every observed instant is in another, and the windows do not touch, so no row anywhere can carry both. That is why the event studies are NOT_IDENTIFIED, and it is a measured comparison of coverage windows rather than a judgement",
+       "verdict": "NO_CONSENSUS_SOURCE_OVERLAPS_AN_OBSERVED_CLOCK_SOURCE"
+      },
+      "previous_non_null_rows": 0,
+      "revision_history": "NO_VINTAGES",
+      "revision_history_reading": "at the finest key this resource offers (date, event_name, fred_series, transform, transformed_actual, consensus_estimate, surprise, source_note) every key carries one value, so no earlier version of any field survives here and a point-in-time view cannot be reconstructed from these bytes",
+      "schedule_only": false,
+      "unit_column": "transform",
+      "unit_values": [
+       "yoy_pct_change"
+      ]
+     },
+     "clock": {
+      "column": "date",
+      "documented_by_the_source": false,
+      "eras": [],
+      "eras_determined": 0,
+      "eras_status": "NOT_MEASURED",
+      "eras_undetermined": 0,
+      "evidence": "UNKNOWN",
+      "reading": "a naive column with no producer statement of zone. No era measurement was made for this resource: the clock job measures an archive against observed publication conventions, and this column is a reference period or a derived date rather than a release wall clock, so there is no convention to measure it against. It stays UNKNOWN rather than being read as UTC",
+      "timezone_aware_in_the_bytes": false
+     },
+     "coverage": {
+      "column": "date",
+      "from": "1990-01-01T00:00:00",
+      "rows_with_a_value": 432,
+      "rows_without_a_value": 0,
+      "status": "MEASURED",
+      "to": "2025-12-01T00:00:00",
+      "unit": "naive_wall_clock"
+     },
+     "governed_delivery": {
+      "inventoried": true,
+      "inventoried_evidence": {
+       "evidence": "MEASURED_FROM_A_LAKE_INVENTORY_SNAPSHOT",
+       "inventoried": true,
+       "snapshot": {
+        "file": "inventory.after.json",
+        "sha256": "66f2aa5d06054904b4669c505f5b8d35b388cf04657a02169515d1e891894325"
+       },
+       "why": "the snapshot lists 10551 resources and this path is among them"
+      },
+      "lake": "financial_files",
+      "meaning": "inventoried by a lake and refused on download until a contract derived from producer evidence is installed",
+      "state": "CLOSED_NO_AVAILABILITY_CONTRACT",
+      "what_would_open_it": "an availability contract derived from producer evidence: what the available-time label denotes, the completion bound, the time-zone evidence and the use class, validated against these bytes",
+      "why": "the provider's include globs cover `economic_calendar/**`, so the resource is discoverable (inventoried: True, MEASURED_FROM_A_LAKE_INVENTORY_SNAPSHOT), and `resource_contracts` carries no entry for it, so a governed download is refused `resource availability contract required` (fail-closed, docs/00_CONTRATO.md §5)"
+     },
+     "measurement_provenance": {
+      "bytes_digest_reverified_at_registration": "aed1d669ee32b37c202c0c191d45deb3179a64dd33757e4c0c336af093b106fd",
+      "clock_artifact": null,
+      "inventory_artifact": {
+       "path": "inventory.json",
+       "schema": "m5phet.calendar_inventory.v1",
+       "sha256": "5dd3af2c77e133bb1a29f562446677fb8d9b43f22b65a1a90eafe2f5988c9d17"
+      },
+      "reading": "every count, role, unit and vintage verdict above comes from the inventory artifact; the era offsets come from the clock artifact; the coverage window and the bytes digest were re-measured by this tool on the file itself",
+      "tool": "data_gov.tools.register_calendar_resources.v1"
+     },
+     "physical_location": {
+      "bytes": 16566,
+      "format": "parquet",
+      "lake": "financial_files",
+      "reading": "the path is relative to the root it belongs to; the absolute path of the root is deliberately not registered -- it is host configuration, not a fact about the resource",
+      "resource_path_in_root": "economic_calendar/release_actuals/cpi_yoy/actuals.parquet",
+      "root_kind": "financial_data_root",
+      "rows": 432
+     },
+     "publication_instant": {
+      "column": "date",
+      "kind": "NO_PUBLICATION_INSTANT_OF_ANY_KIND",
+      "meaning": "no column of this resource is an instant at which anything was published, scheduled or otherwise",
+      "observed": false,
+      "why": "the only time column is `date`, the REFERENCE PERIOD of the value. Nothing in the file says when the number was released, and the reference month is not a release date"
+     },
+     "source_documentation": {
+      "file": "economic_calendar/release_actuals/cpi_yoy/README.md",
+      "reading": "the producer's README states: 'Economic release actuals for CPI YoY from FRED; consensus fields are intentionally blank until a free scheduled-events source is validated.'"
+     },
+     "study_refusal": {
+      "code": "NEITHER_CONSENSUS_NOR_OBSERVED_PUBLICATION",
+      "reading": "this resource carries neither half of a surprise: no expectation, and no observed instant at which anything became public"
+     },
+     "what_it_is": "US CPI year-on-year actuals from FRED, one row per reference month, with a consensus column the producer left empty on purpose. Representative of the twelve sibling FRED actual resources under `economic_calendar/release_actuals/`."
+    },
+    "facts_sha256": "5478ebe8e3ff9edd9a940384559754e9b1bab296608d9b185d12f50e82beea3a",
+    "lake": "financial_files",
+    "receipt_clock_reading": "`registered_at` is OUTSIDE the key: it dates this reading of the resource, not the resource. Reading the same bytes and declaring the same facts again collides on the key and is a DUPLICATE, so a catalog sweep never manufactures revisions",
+    "registered_at": "2026-09-26T07:10:00+00:00",
+    "registered_by": "satoshi-iii",
+    "registration_grants": "NOTHING: registering a resource records what is known and missing about it. It does not authorize a delivery, does not install an availability contract and does not make an absent fact present",
+    "registration_identity": {
+     "content_sha256": "aed1d669ee32b37c202c0c191d45deb3179a64dd33757e4c0c336af093b106fd",
+     "facts_sha256": "5478ebe8e3ff9edd9a940384559754e9b1bab296608d9b185d12f50e82beea3a"
+    },
+    "registration_sha256": "23dd36fb42bccc878db4b256d5c80fef307965b31699b1be50343250952d936c",
+    "resource": "economic_calendar/release_actuals/cpi_yoy/actuals.parquet",
+    "revision_index": 2,
+    "row_id": "09a1ec02792d776cdc2c5ac8d88a3b5d96b3b3959676ad623235cfc309b6e8e5",
+    "row_sha256": "77bd71070bf6fb092143e64c1b5d2320ddb66f1feef63976caaf4a6eaa8fd4ff",
+    "schema": "data_gov.resource_registration.v1",
+    "supersedes": [
+     "298093f4d52c65cbf60b8b370105469a6d69fbc48da8200cb60ae6a29d8b6ffb",
+     "92bc691f4644d1db0563be0fa4a03dafc40c6cd9e9d4707d706ce890cc2e9353"
+    ],
+    "supersedes_reading": "later knowledge about the same resource. The superseded rows are retained and stay true of the moment they were registered, which is what `known_at` reads them back for"
+   },
+   "row_id": "09a1ec02792d776cdc2c5ac8d88a3b5d96b3b3959676ad623235cfc309b6e8e5",
+   "row_sha256": "77bd71070bf6fb092143e64c1b5d2320ddb66f1feef63976caaf4a6eaa8fd4ff"
+  }
+ ],
+ "schema": "data_gov.calendar_registration_run.v1",
+ "tool": "data_gov.tools.register_calendar_resources.v1"
+}
