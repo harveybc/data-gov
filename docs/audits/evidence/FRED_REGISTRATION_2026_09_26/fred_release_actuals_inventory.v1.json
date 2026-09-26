@@ -1,0 +1,2539 @@
+{
+ "declared": {
+  "clock_column": "date",
+  "role_columns": {
+   "actual": [
+    "actual"
+   ],
+   "cancellation_state": [],
+   "consensus": [
+    "consensus_estimate"
+   ],
+   "historical_availability": [],
+   "observed_sequence": [],
+   "previous": [
+    "previous"
+   ],
+   "publication_instant": [],
+   "receipt_instant": [],
+   "reference_period": [
+    "date"
+   ],
+   "revision_marker": [],
+   "schedule_instant": [],
+   "unit": [
+    "transform"
+   ],
+   "vintage_version": []
+  },
+  "value_column": "actual"
+ },
+ "family": "fred_release_actuals",
+ "reading": "one record per FRED release-actuals resource, measured from its own bytes. The absolute root is deliberately not recorded: it is host configuration, not a fact about a resource",
+ "reference": {
+  "artifact": {
+   "file": "calendar_inventory.v1.redacted.json",
+   "schema": "m5phet.calendar_inventory.v1",
+   "sha256": "2e4b952360695ebbe3eadf79f11caf5e2de8163f4ac25e2e5553fab46c71d730"
+  },
+  "column_set_compared": [
+   "actual",
+   "consensus_estimate",
+   "date",
+   "event_name",
+   "fred_series",
+   "source_note",
+   "surprise",
+   "transform",
+   "transformed_actual"
+  ],
+  "resource": "fred_cpi_yoy_actuals",
+  "role_case_lists_carried_over": [
+   "actual",
+   "cancellation_state",
+   "consensus",
+   "historical_availability",
+   "observed_sequence",
+   "previous",
+   "publication_instant",
+   "receipt_instant",
+   "reference_period",
+   "revision_marker",
+   "schedule_instant",
+   "unit",
+   "vintage_version"
+  ],
+  "why": "the blocked-case list of each role is the upstream producer's, carried over only to files whose column set is measured identical to the sibling it was measured on"
+ },
+ "resources": [
+  {
+   "bytes": 16697,
+   "clock": {
+    "column": "date",
+    "declared_timezone_aware": false,
+    "first_and_last_values_in_file_order": [
+     "1990-01-01 00:00:00",
+     "2025-12-01 00:00:00"
+    ],
+    "measured_timezone_aware": false,
+    "reading": "NAIVE_WALL_CLOCK: these values name no instant on their own. This column is the REFERENCE PERIOD of the value, not a release wall clock, so there is no publication convention to measure it against and no era measurement was made for it",
+    "span": [
+     "1990-01-01 00:00:00",
+     "2025-12-01 00:00:00"
+    ],
+    "span_comparison": "chronological",
+    "values_missing": 0
+   },
+   "columns": {
+    "actual": {
+     "non_null": 431,
+     "null_or_empty": 1,
+     "types": {
+      "float": 431
+     }
+    },
+    "consensus_estimate": {
+     "non_null": 0,
+     "null_or_empty": 432,
+     "types": {}
+    },
+    "date": {
+     "non_null": 432,
+     "null_or_empty": 0,
+     "types": {
+      "Timestamp": 432
+     }
+    },
+    "event_name": {
+     "non_null": 432,
+     "null_or_empty": 0,
+     "types": {
+      "str": 432
+     }
+    },
+    "fred_series": {
+     "non_null": 432,
+     "null_or_empty": 0,
+     "types": {
+      "str": 432
+     }
+    },
+    "source_note": {
+     "non_null": 432,
+     "null_or_empty": 0,
+     "types": {
+      "str": 432
+     }
+    },
+    "surprise": {
+     "non_null": 0,
+     "null_or_empty": 432,
+     "types": {}
+    },
+    "transform": {
+     "non_null": 432,
+     "null_or_empty": 0,
+     "types": {
+      "str": 432
+     }
+    },
+    "transformed_actual": {
+     "non_null": 420,
+     "null_or_empty": 12,
+     "types": {
+      "float": 420
+     }
+    }
+   },
+   "field_roles": {
+    "actual": {
+     "cases_it_blocks": [],
+     "column": "actual",
+     "non_null_rows": 431,
+     "present": true
+    },
+    "cancellation_state": {
+     "cases_it_blocks": [
+      "CAL11"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "consensus": {
+     "cases_it_blocks": [
+      "CAL03",
+      "CAL06"
+     ],
+     "column": "consensus_estimate",
+     "non_null_rows": 0,
+     "present": false,
+     "reading": "COLUMN_PRESENT_BUT_EMPTY: the column exists and every row is null, which is the same absence as a missing column for any case that needs a value"
+    },
+    "historical_availability": {
+     "cases_it_blocks": [
+      "CAL09"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "observed_sequence": {
+     "cases_it_blocks": [
+      "CAL10"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "previous": {
+     "cases_it_blocks": [],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "publication_instant": {
+     "cases_it_blocks": [
+      "CAL02",
+      "CAL03",
+      "CAL10"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "receipt_instant": {
+     "cases_it_blocks": [
+      "CAL02",
+      "CAL07",
+      "CAL08",
+      "CAL12"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "reference_period": {
+     "cases_it_blocks": [],
+     "column": "date",
+     "non_null_rows": 432,
+     "present": true
+    },
+    "revision_marker": {
+     "cases_it_blocks": [
+      "CAL04",
+      "CAL10"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "schedule_instant": {
+     "cases_it_blocks": [
+      "CAL01",
+      "CAL11"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "unit": {
+     "cases_it_blocks": [],
+     "column": "transform",
+     "non_null_rows": 432,
+     "present": true
+    },
+    "vintage_version": {
+     "cases_it_blocks": [
+      "CAL04",
+      "CAL07",
+      "CAL08"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    }
+   },
+   "format": "parquet",
+   "identity": {
+    "event_column": "event_name",
+    "events": [
+     "Core CPI YoY"
+    ],
+    "series": [
+     "CPILFESL"
+    ],
+    "series_column": "fred_series"
+   },
+   "pandas_dtypes": {
+    "actual": "float64",
+    "consensus_estimate": "object",
+    "date": "datetime64[ns]",
+    "event_name": "object",
+    "fred_series": "object",
+    "source_note": "object",
+    "surprise": "object",
+    "transform": "object",
+    "transformed_actual": "float64"
+   },
+   "path_in_root": "economic_calendar/release_actuals/core_cpi_yoy/actuals.parquet",
+   "provenance": {
+    "declared_digest_matches_these_bytes": true,
+    "declared_sha256": "91723a03622489b8dacee66691465e21a652588d5db42b5f137deb890b60f934",
+    "description": "Economic release actuals for Core CPI YoY from FRED; consensus fields are intentionally blank until a free scheduled-events source is validated.",
+    "file_grain_receipt_instant": "2026-05-01T16:42:56.811471+00:00",
+    "present": true,
+    "reading": "`acquired_at` is a FILE-grain receipt clock: it dates the download, not any single release, so it cannot order two releases inside the file and is never read as `receipt_instant`",
+    "source": "FRED"
+   },
+   "reading": "measured from these bytes by data_gov.tools.inventory_fred_release_actuals.v1",
+   "resource": "fred_core_cpi_yoy_actuals",
+   "rows": 432,
+   "sha256": "91723a03622489b8dacee66691465e21a652588d5db42b5f137deb890b60f934",
+   "slug": "core_cpi_yoy",
+   "status": "MEASURED",
+   "units": {
+    "column": "transform",
+    "distinct": 1,
+    "most_common": [
+     [
+      "yoy_pct_change",
+      432
+     ]
+    ]
+   },
+   "vintages": {
+    "has_observation_clock": false,
+    "has_version_field": false,
+    "key_ladder": [
+     {
+      "examples": [],
+      "key": [
+       "fred_series",
+       "date"
+      ],
+      "keys": 432,
+      "keys_whose_rows_disagree_about_the_value": 0,
+      "keys_with_more_than_one_row": 0,
+      "most_distinct_values_on_one_key": 1
+     },
+     {
+      "examples": [],
+      "key": [
+       "date",
+       "event_name",
+       "fred_series",
+       "transform",
+       "transformed_actual",
+       "consensus_estimate",
+       "surprise",
+       "source_note"
+      ],
+      "keys": 432,
+      "keys_whose_rows_disagree_about_the_value": 0,
+      "keys_with_more_than_one_row": 0,
+      "most_distinct_values_on_one_key": 1
+     }
+    ],
+    "reading": "at the finest key this resource offers (date, event_name, fred_series, transform, transformed_actual, consensus_estimate, surprise, source_note) every key carries one value, so no earlier version of any field survives here and a point-in-time view cannot be reconstructed from these bytes",
+    "value_column": "actual",
+    "verdict": "NO_VINTAGES"
+   }
+  },
+  {
+   "bytes": 16928,
+   "clock": {
+    "column": "date",
+    "declared_timezone_aware": false,
+    "first_and_last_values_in_file_order": [
+     "1990-01-01 00:00:00",
+     "2025-12-01 00:00:00"
+    ],
+    "measured_timezone_aware": false,
+    "reading": "NAIVE_WALL_CLOCK: these values name no instant on their own. This column is the REFERENCE PERIOD of the value, not a release wall clock, so there is no publication convention to measure it against and no era measurement was made for it",
+    "span": [
+     "1990-01-01 00:00:00",
+     "2025-12-01 00:00:00"
+    ],
+    "span_comparison": "chronological",
+    "values_missing": 0
+   },
+   "columns": {
+    "actual": {
+     "non_null": 432,
+     "null_or_empty": 0,
+     "types": {
+      "float": 432
+     }
+    },
+    "consensus_estimate": {
+     "non_null": 0,
+     "null_or_empty": 432,
+     "types": {}
+    },
+    "date": {
+     "non_null": 432,
+     "null_or_empty": 0,
+     "types": {
+      "Timestamp": 432
+     }
+    },
+    "event_name": {
+     "non_null": 432,
+     "null_or_empty": 0,
+     "types": {
+      "str": 432
+     }
+    },
+    "fred_series": {
+     "non_null": 432,
+     "null_or_empty": 0,
+     "types": {
+      "str": 432
+     }
+    },
+    "source_note": {
+     "non_null": 432,
+     "null_or_empty": 0,
+     "types": {
+      "str": 432
+     }
+    },
+    "surprise": {
+     "non_null": 0,
+     "null_or_empty": 432,
+     "types": {}
+    },
+    "transform": {
+     "non_null": 432,
+     "null_or_empty": 0,
+     "types": {
+      "str": 432
+     }
+    },
+    "transformed_actual": {
+     "non_null": 420,
+     "null_or_empty": 12,
+     "types": {
+      "float": 420
+     }
+    }
+   },
+   "field_roles": {
+    "actual": {
+     "cases_it_blocks": [],
+     "column": "actual",
+     "non_null_rows": 432,
+     "present": true
+    },
+    "cancellation_state": {
+     "cases_it_blocks": [
+      "CAL11"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "consensus": {
+     "cases_it_blocks": [
+      "CAL03",
+      "CAL06"
+     ],
+     "column": "consensus_estimate",
+     "non_null_rows": 0,
+     "present": false,
+     "reading": "COLUMN_PRESENT_BUT_EMPTY: the column exists and every row is null, which is the same absence as a missing column for any case that needs a value"
+    },
+    "historical_availability": {
+     "cases_it_blocks": [
+      "CAL09"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "observed_sequence": {
+     "cases_it_blocks": [
+      "CAL10"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "previous": {
+     "cases_it_blocks": [],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "publication_instant": {
+     "cases_it_blocks": [
+      "CAL02",
+      "CAL03",
+      "CAL10"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "receipt_instant": {
+     "cases_it_blocks": [
+      "CAL02",
+      "CAL07",
+      "CAL08",
+      "CAL12"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "reference_period": {
+     "cases_it_blocks": [],
+     "column": "date",
+     "non_null_rows": 432,
+     "present": true
+    },
+    "revision_marker": {
+     "cases_it_blocks": [
+      "CAL04",
+      "CAL10"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "schedule_instant": {
+     "cases_it_blocks": [
+      "CAL01",
+      "CAL11"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "unit": {
+     "cases_it_blocks": [],
+     "column": "transform",
+     "non_null_rows": 432,
+     "present": true
+    },
+    "vintage_version": {
+     "cases_it_blocks": [
+      "CAL04",
+      "CAL07",
+      "CAL08"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    }
+   },
+   "format": "parquet",
+   "identity": {
+    "event_column": "event_name",
+    "events": [
+     "PCE Core YoY"
+    ],
+    "series": [
+     "PCEPILFE"
+    ],
+    "series_column": "fred_series"
+   },
+   "pandas_dtypes": {
+    "actual": "float64",
+    "consensus_estimate": "object",
+    "date": "datetime64[ns]",
+    "event_name": "object",
+    "fred_series": "object",
+    "source_note": "object",
+    "surprise": "object",
+    "transform": "object",
+    "transformed_actual": "float64"
+   },
+   "path_in_root": "economic_calendar/release_actuals/core_pce_yoy/actuals.parquet",
+   "provenance": {
+    "declared_digest_matches_these_bytes": true,
+    "declared_sha256": "c6a07bc52da8466b3cf132a48f45fe3155ad8494dd775743d46102709e4a4e13",
+    "description": "Economic release actuals for PCE Core YoY from FRED; consensus fields are intentionally blank until a free scheduled-events source is validated.",
+    "file_grain_receipt_instant": "2026-05-01T16:42:57.102412+00:00",
+    "present": true,
+    "reading": "`acquired_at` is a FILE-grain receipt clock: it dates the download, not any single release, so it cannot order two releases inside the file and is never read as `receipt_instant`",
+    "source": "FRED"
+   },
+   "reading": "measured from these bytes by data_gov.tools.inventory_fred_release_actuals.v1",
+   "resource": "fred_core_pce_yoy_actuals",
+   "rows": 432,
+   "sha256": "c6a07bc52da8466b3cf132a48f45fe3155ad8494dd775743d46102709e4a4e13",
+   "slug": "core_pce_yoy",
+   "status": "MEASURED",
+   "units": {
+    "column": "transform",
+    "distinct": 1,
+    "most_common": [
+     [
+      "yoy_pct_change",
+      432
+     ]
+    ]
+   },
+   "vintages": {
+    "has_observation_clock": false,
+    "has_version_field": false,
+    "key_ladder": [
+     {
+      "examples": [],
+      "key": [
+       "fred_series",
+       "date"
+      ],
+      "keys": 432,
+      "keys_whose_rows_disagree_about_the_value": 0,
+      "keys_with_more_than_one_row": 0,
+      "most_distinct_values_on_one_key": 1
+     },
+     {
+      "examples": [],
+      "key": [
+       "date",
+       "event_name",
+       "fred_series",
+       "transform",
+       "transformed_actual",
+       "consensus_estimate",
+       "surprise",
+       "source_note"
+      ],
+      "keys": 432,
+      "keys_whose_rows_disagree_about_the_value": 0,
+      "keys_with_more_than_one_row": 0,
+      "most_distinct_values_on_one_key": 1
+     }
+    ],
+    "reading": "at the finest key this resource offers (date, event_name, fred_series, transform, transformed_actual, consensus_estimate, surprise, source_note) every key carries one value, so no earlier version of any field survives here and a point-in-time view cannot be reconstructed from these bytes",
+    "value_column": "actual",
+    "verdict": "NO_VINTAGES"
+   }
+  },
+  {
+   "bytes": 12874,
+   "clock": {
+    "column": "date",
+    "declared_timezone_aware": false,
+    "first_and_last_values_in_file_order": [
+     "1990-01-01 00:00:00",
+     "2025-12-01 00:00:00"
+    ],
+    "measured_timezone_aware": false,
+    "reading": "NAIVE_WALL_CLOCK: these values name no instant on their own. This column is the REFERENCE PERIOD of the value, not a release wall clock, so there is no publication convention to measure it against and no era measurement was made for it",
+    "span": [
+     "1990-01-01 00:00:00",
+     "2025-12-01 00:00:00"
+    ],
+    "span_comparison": "chronological",
+    "values_missing": 0
+   },
+   "columns": {
+    "actual": {
+     "non_null": 432,
+     "null_or_empty": 0,
+     "types": {
+      "float": 432
+     }
+    },
+    "consensus_estimate": {
+     "non_null": 0,
+     "null_or_empty": 432,
+     "types": {}
+    },
+    "date": {
+     "non_null": 432,
+     "null_or_empty": 0,
+     "types": {
+      "Timestamp": 432
+     }
+    },
+    "event_name": {
+     "non_null": 432,
+     "null_or_empty": 0,
+     "types": {
+      "str": 432
+     }
+    },
+    "fred_series": {
+     "non_null": 432,
+     "null_or_empty": 0,
+     "types": {
+      "str": 432
+     }
+    },
+    "source_note": {
+     "non_null": 432,
+     "null_or_empty": 0,
+     "types": {
+      "str": 432
+     }
+    },
+    "surprise": {
+     "non_null": 0,
+     "null_or_empty": 432,
+     "types": {}
+    },
+    "transform": {
+     "non_null": 432,
+     "null_or_empty": 0,
+     "types": {
+      "str": 432
+     }
+    },
+    "transformed_actual": {
+     "non_null": 432,
+     "null_or_empty": 0,
+     "types": {
+      "float": 432
+     }
+    }
+   },
+   "field_roles": {
+    "actual": {
+     "cases_it_blocks": [],
+     "column": "actual",
+     "non_null_rows": 432,
+     "present": true
+    },
+    "cancellation_state": {
+     "cases_it_blocks": [
+      "CAL11"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "consensus": {
+     "cases_it_blocks": [
+      "CAL03",
+      "CAL06"
+     ],
+     "column": "consensus_estimate",
+     "non_null_rows": 0,
+     "present": false,
+     "reading": "COLUMN_PRESENT_BUT_EMPTY: the column exists and every row is null, which is the same absence as a missing column for any case that needs a value"
+    },
+    "historical_availability": {
+     "cases_it_blocks": [
+      "CAL09"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "observed_sequence": {
+     "cases_it_blocks": [
+      "CAL10"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "previous": {
+     "cases_it_blocks": [],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "publication_instant": {
+     "cases_it_blocks": [
+      "CAL02",
+      "CAL03",
+      "CAL10"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "receipt_instant": {
+     "cases_it_blocks": [
+      "CAL02",
+      "CAL07",
+      "CAL08",
+      "CAL12"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "reference_period": {
+     "cases_it_blocks": [],
+     "column": "date",
+     "non_null_rows": 432,
+     "present": true
+    },
+    "revision_marker": {
+     "cases_it_blocks": [
+      "CAL04",
+      "CAL10"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "schedule_instant": {
+     "cases_it_blocks": [
+      "CAL01",
+      "CAL11"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "unit": {
+     "cases_it_blocks": [],
+     "column": "transform",
+     "non_null_rows": 432,
+     "present": true
+    },
+    "vintage_version": {
+     "cases_it_blocks": [
+      "CAL04",
+      "CAL07",
+      "CAL08"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    }
+   },
+   "format": "parquet",
+   "identity": {
+    "event_column": "event_name",
+    "events": [
+     "Fed Funds"
+    ],
+    "series": [
+     "FEDFUNDS"
+    ],
+    "series_column": "fred_series"
+   },
+   "pandas_dtypes": {
+    "actual": "float64",
+    "consensus_estimate": "object",
+    "date": "datetime64[ns]",
+    "event_name": "object",
+    "fred_series": "object",
+    "source_note": "object",
+    "surprise": "object",
+    "transform": "object",
+    "transformed_actual": "float64"
+   },
+   "path_in_root": "economic_calendar/release_actuals/fed_funds/actuals.parquet",
+   "provenance": {
+    "declared_digest_matches_these_bytes": true,
+    "declared_sha256": "9900a81605e7968b4cd48d08a89deb4495082d788c4aae82ae692cee21b6db3c",
+    "description": "Economic release actuals for Fed Funds from FRED; consensus fields are intentionally blank until a free scheduled-events source is validated.",
+    "file_grain_receipt_instant": "2026-05-01T16:42:58.274316+00:00",
+    "present": true,
+    "reading": "`acquired_at` is a FILE-grain receipt clock: it dates the download, not any single release, so it cannot order two releases inside the file and is never read as `receipt_instant`",
+    "source": "FRED"
+   },
+   "reading": "measured from these bytes by data_gov.tools.inventory_fred_release_actuals.v1",
+   "resource": "fred_fed_funds_actuals",
+   "rows": 432,
+   "sha256": "9900a81605e7968b4cd48d08a89deb4495082d788c4aae82ae692cee21b6db3c",
+   "slug": "fed_funds",
+   "status": "MEASURED",
+   "units": {
+    "column": "transform",
+    "distinct": 1,
+    "most_common": [
+     [
+      "level",
+      432
+     ]
+    ]
+   },
+   "vintages": {
+    "has_observation_clock": false,
+    "has_version_field": false,
+    "key_ladder": [
+     {
+      "examples": [],
+      "key": [
+       "fred_series",
+       "date"
+      ],
+      "keys": 432,
+      "keys_whose_rows_disagree_about_the_value": 0,
+      "keys_with_more_than_one_row": 0,
+      "most_distinct_values_on_one_key": 1
+     },
+     {
+      "examples": [],
+      "key": [
+       "date",
+       "event_name",
+       "fred_series",
+       "transform",
+       "transformed_actual",
+       "consensus_estimate",
+       "surprise",
+       "source_note"
+      ],
+      "keys": 432,
+      "keys_whose_rows_disagree_about_the_value": 0,
+      "keys_with_more_than_one_row": 0,
+      "most_distinct_values_on_one_key": 1
+     }
+    ],
+    "reading": "at the finest key this resource offers (date, event_name, fred_series, transform, transformed_actual, consensus_estimate, surprise, source_note) every key carries one value, so no earlier version of any field survives here and a point-in-time view cannot be reconstructed from these bytes",
+    "value_column": "actual",
+    "verdict": "NO_VINTAGES"
+   }
+  },
+  {
+   "bytes": 8324,
+   "clock": {
+    "column": "date",
+    "declared_timezone_aware": false,
+    "first_and_last_values_in_file_order": [
+     "1990-01-01 00:00:00",
+     "2025-10-01 00:00:00"
+    ],
+    "measured_timezone_aware": false,
+    "reading": "NAIVE_WALL_CLOCK: these values name no instant on their own. This column is the REFERENCE PERIOD of the value, not a release wall clock, so there is no publication convention to measure it against and no era measurement was made for it",
+    "span": [
+     "1990-01-01 00:00:00",
+     "2025-10-01 00:00:00"
+    ],
+    "span_comparison": "chronological",
+    "values_missing": 0
+   },
+   "columns": {
+    "actual": {
+     "non_null": 144,
+     "null_or_empty": 0,
+     "types": {
+      "float": 144
+     }
+    },
+    "consensus_estimate": {
+     "non_null": 0,
+     "null_or_empty": 144,
+     "types": {}
+    },
+    "date": {
+     "non_null": 144,
+     "null_or_empty": 0,
+     "types": {
+      "Timestamp": 144
+     }
+    },
+    "event_name": {
+     "non_null": 144,
+     "null_or_empty": 0,
+     "types": {
+      "str": 144
+     }
+    },
+    "fred_series": {
+     "non_null": 144,
+     "null_or_empty": 0,
+     "types": {
+      "str": 144
+     }
+    },
+    "source_note": {
+     "non_null": 144,
+     "null_or_empty": 0,
+     "types": {
+      "str": 144
+     }
+    },
+    "surprise": {
+     "non_null": 0,
+     "null_or_empty": 144,
+     "types": {}
+    },
+    "transform": {
+     "non_null": 144,
+     "null_or_empty": 0,
+     "types": {
+      "str": 144
+     }
+    },
+    "transformed_actual": {
+     "non_null": 144,
+     "null_or_empty": 0,
+     "types": {
+      "float": 144
+     }
+    }
+   },
+   "field_roles": {
+    "actual": {
+     "cases_it_blocks": [],
+     "column": "actual",
+     "non_null_rows": 144,
+     "present": true
+    },
+    "cancellation_state": {
+     "cases_it_blocks": [
+      "CAL11"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "consensus": {
+     "cases_it_blocks": [
+      "CAL03",
+      "CAL06"
+     ],
+     "column": "consensus_estimate",
+     "non_null_rows": 0,
+     "present": false,
+     "reading": "COLUMN_PRESENT_BUT_EMPTY: the column exists and every row is null, which is the same absence as a missing column for any case that needs a value"
+    },
+    "historical_availability": {
+     "cases_it_blocks": [
+      "CAL09"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "observed_sequence": {
+     "cases_it_blocks": [
+      "CAL10"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "previous": {
+     "cases_it_blocks": [],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "publication_instant": {
+     "cases_it_blocks": [
+      "CAL02",
+      "CAL03",
+      "CAL10"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "receipt_instant": {
+     "cases_it_blocks": [
+      "CAL02",
+      "CAL07",
+      "CAL08",
+      "CAL12"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "reference_period": {
+     "cases_it_blocks": [],
+     "column": "date",
+     "non_null_rows": 144,
+     "present": true
+    },
+    "revision_marker": {
+     "cases_it_blocks": [
+      "CAL04",
+      "CAL10"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "schedule_instant": {
+     "cases_it_blocks": [
+      "CAL01",
+      "CAL11"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "unit": {
+     "cases_it_blocks": [],
+     "column": "transform",
+     "non_null_rows": 144,
+     "present": true
+    },
+    "vintage_version": {
+     "cases_it_blocks": [
+      "CAL04",
+      "CAL07",
+      "CAL08"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    }
+   },
+   "format": "parquet",
+   "identity": {
+    "event_column": "event_name",
+    "events": [
+     "GDP QoQ Annualized"
+    ],
+    "series": [
+     "A191RL1Q225SBEA"
+    ],
+    "series_column": "fred_series"
+   },
+   "pandas_dtypes": {
+    "actual": "float64",
+    "consensus_estimate": "object",
+    "date": "datetime64[ns]",
+    "event_name": "object",
+    "fred_series": "object",
+    "source_note": "object",
+    "surprise": "object",
+    "transform": "object",
+    "transformed_actual": "float64"
+   },
+   "path_in_root": "economic_calendar/release_actuals/gdp_qoq_annualized/actuals.parquet",
+   "provenance": {
+    "declared_digest_matches_these_bytes": true,
+    "declared_sha256": "5e47f6c40fac038b8402c21f944fafa5b26cbbb4cd6ca61a72c72d08dacd2b40",
+    "description": "Economic release actuals for GDP QoQ Annualized from FRED; consensus fields are intentionally blank until a free scheduled-events source is validated.",
+    "file_grain_receipt_instant": "2026-05-01T16:42:57.969580+00:00",
+    "present": true,
+    "reading": "`acquired_at` is a FILE-grain receipt clock: it dates the download, not any single release, so it cannot order two releases inside the file and is never read as `receipt_instant`",
+    "source": "FRED"
+   },
+   "reading": "measured from these bytes by data_gov.tools.inventory_fred_release_actuals.v1",
+   "resource": "fred_gdp_qoq_annualized_actuals",
+   "rows": 144,
+   "sha256": "5e47f6c40fac038b8402c21f944fafa5b26cbbb4cd6ca61a72c72d08dacd2b40",
+   "slug": "gdp_qoq_annualized",
+   "status": "MEASURED",
+   "units": {
+    "column": "transform",
+    "distinct": 1,
+    "most_common": [
+     [
+      "level",
+      144
+     ]
+    ]
+   },
+   "vintages": {
+    "has_observation_clock": false,
+    "has_version_field": false,
+    "key_ladder": [
+     {
+      "examples": [],
+      "key": [
+       "fred_series",
+       "date"
+      ],
+      "keys": 144,
+      "keys_whose_rows_disagree_about_the_value": 0,
+      "keys_with_more_than_one_row": 0,
+      "most_distinct_values_on_one_key": 1
+     },
+     {
+      "examples": [],
+      "key": [
+       "date",
+       "event_name",
+       "fred_series",
+       "transform",
+       "transformed_actual",
+       "consensus_estimate",
+       "surprise",
+       "source_note"
+      ],
+      "keys": 144,
+      "keys_whose_rows_disagree_about_the_value": 0,
+      "keys_with_more_than_one_row": 0,
+      "most_distinct_values_on_one_key": 1
+     }
+    ],
+    "reading": "at the finest key this resource offers (date, event_name, fred_series, transform, transformed_actual, consensus_estimate, surprise, source_note) every key carries one value, so no earlier version of any field survives here and a point-in-time view cannot be reconstructed from these bytes",
+    "value_column": "actual",
+    "verdict": "NO_VINTAGES"
+   }
+  },
+  {
+   "bytes": 31961,
+   "clock": {
+    "column": "date",
+    "declared_timezone_aware": false,
+    "first_and_last_values_in_file_order": [
+     "1990-01-06 00:00:00",
+     "2025-12-27 00:00:00"
+    ],
+    "measured_timezone_aware": false,
+    "reading": "NAIVE_WALL_CLOCK: these values name no instant on their own. This column is the REFERENCE PERIOD of the value, not a release wall clock, so there is no publication convention to measure it against and no era measurement was made for it",
+    "span": [
+     "1990-01-06 00:00:00",
+     "2025-12-27 00:00:00"
+    ],
+    "span_comparison": "chronological",
+    "values_missing": 0
+   },
+   "columns": {
+    "actual": {
+     "non_null": 1878,
+     "null_or_empty": 0,
+     "types": {
+      "int": 1878
+     }
+    },
+    "consensus_estimate": {
+     "non_null": 0,
+     "null_or_empty": 1878,
+     "types": {}
+    },
+    "date": {
+     "non_null": 1878,
+     "null_or_empty": 0,
+     "types": {
+      "Timestamp": 1878
+     }
+    },
+    "event_name": {
+     "non_null": 1878,
+     "null_or_empty": 0,
+     "types": {
+      "str": 1878
+     }
+    },
+    "fred_series": {
+     "non_null": 1878,
+     "null_or_empty": 0,
+     "types": {
+      "str": 1878
+     }
+    },
+    "source_note": {
+     "non_null": 1878,
+     "null_or_empty": 0,
+     "types": {
+      "str": 1878
+     }
+    },
+    "surprise": {
+     "non_null": 0,
+     "null_or_empty": 1878,
+     "types": {}
+    },
+    "transform": {
+     "non_null": 1878,
+     "null_or_empty": 0,
+     "types": {
+      "str": 1878
+     }
+    },
+    "transformed_actual": {
+     "non_null": 1878,
+     "null_or_empty": 0,
+     "types": {
+      "int": 1878
+     }
+    }
+   },
+   "field_roles": {
+    "actual": {
+     "cases_it_blocks": [],
+     "column": "actual",
+     "non_null_rows": 1878,
+     "present": true
+    },
+    "cancellation_state": {
+     "cases_it_blocks": [
+      "CAL11"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "consensus": {
+     "cases_it_blocks": [
+      "CAL03",
+      "CAL06"
+     ],
+     "column": "consensus_estimate",
+     "non_null_rows": 0,
+     "present": false,
+     "reading": "COLUMN_PRESENT_BUT_EMPTY: the column exists and every row is null, which is the same absence as a missing column for any case that needs a value"
+    },
+    "historical_availability": {
+     "cases_it_blocks": [
+      "CAL09"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "observed_sequence": {
+     "cases_it_blocks": [
+      "CAL10"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "previous": {
+     "cases_it_blocks": [],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "publication_instant": {
+     "cases_it_blocks": [
+      "CAL02",
+      "CAL03",
+      "CAL10"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "receipt_instant": {
+     "cases_it_blocks": [
+      "CAL02",
+      "CAL07",
+      "CAL08",
+      "CAL12"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "reference_period": {
+     "cases_it_blocks": [],
+     "column": "date",
+     "non_null_rows": 1878,
+     "present": true
+    },
+    "revision_marker": {
+     "cases_it_blocks": [
+      "CAL04",
+      "CAL10"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "schedule_instant": {
+     "cases_it_blocks": [
+      "CAL01",
+      "CAL11"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "unit": {
+     "cases_it_blocks": [],
+     "column": "transform",
+     "non_null_rows": 1878,
+     "present": true
+    },
+    "vintage_version": {
+     "cases_it_blocks": [
+      "CAL04",
+      "CAL07",
+      "CAL08"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    }
+   },
+   "format": "parquet",
+   "identity": {
+    "event_column": "event_name",
+    "events": [
+     "Initial Claims"
+    ],
+    "series": [
+     "ICSA"
+    ],
+    "series_column": "fred_series"
+   },
+   "pandas_dtypes": {
+    "actual": "int64",
+    "consensus_estimate": "object",
+    "date": "datetime64[ns]",
+    "event_name": "object",
+    "fred_series": "object",
+    "source_note": "object",
+    "surprise": "object",
+    "transform": "object",
+    "transformed_actual": "int64"
+   },
+   "path_in_root": "economic_calendar/release_actuals/initial_claims/actuals.parquet",
+   "provenance": {
+    "declared_digest_matches_these_bytes": true,
+    "declared_sha256": "ecec7d30359cb1061b107d91a731a635acef05b92c894e07daba8b2d0bb45f84",
+    "description": "Economic release actuals for Initial Claims from FRED; consensus fields are intentionally blank until a free scheduled-events source is validated.",
+    "file_grain_receipt_instant": "2026-05-01T16:44:02.768976+00:00",
+    "present": true,
+    "reading": "`acquired_at` is a FILE-grain receipt clock: it dates the download, not any single release, so it cannot order two releases inside the file and is never read as `receipt_instant`",
+    "source": "FRED"
+   },
+   "reading": "measured from these bytes by data_gov.tools.inventory_fred_release_actuals.v1",
+   "resource": "fred_initial_claims_actuals",
+   "rows": 1878,
+   "sha256": "ecec7d30359cb1061b107d91a731a635acef05b92c894e07daba8b2d0bb45f84",
+   "slug": "initial_claims",
+   "status": "MEASURED",
+   "units": {
+    "column": "transform",
+    "distinct": 1,
+    "most_common": [
+     [
+      "level",
+      1878
+     ]
+    ]
+   },
+   "vintages": {
+    "has_observation_clock": false,
+    "has_version_field": false,
+    "key_ladder": [
+     {
+      "examples": [],
+      "key": [
+       "fred_series",
+       "date"
+      ],
+      "keys": 1878,
+      "keys_whose_rows_disagree_about_the_value": 0,
+      "keys_with_more_than_one_row": 0,
+      "most_distinct_values_on_one_key": 1
+     },
+     {
+      "examples": [],
+      "key": [
+       "date",
+       "event_name",
+       "fred_series",
+       "transform",
+       "transformed_actual",
+       "consensus_estimate",
+       "surprise",
+       "source_note"
+      ],
+      "keys": 1878,
+      "keys_whose_rows_disagree_about_the_value": 0,
+      "keys_with_more_than_one_row": 0,
+      "most_distinct_values_on_one_key": 1
+     }
+    ],
+    "reading": "at the finest key this resource offers (date, event_name, fred_series, transform, transformed_actual, consensus_estimate, surprise, source_note) every key carries one value, so no earlier version of any field survives here and a point-in-time view cannot be reconstructed from these bytes",
+    "value_column": "actual",
+    "verdict": "NO_VINTAGES"
+   }
+  },
+  {
+   "bytes": 14401,
+   "clock": {
+    "column": "date",
+    "declared_timezone_aware": false,
+    "first_and_last_values_in_file_order": [
+     "1990-01-01 00:00:00",
+     "2025-12-01 00:00:00"
+    ],
+    "measured_timezone_aware": false,
+    "reading": "NAIVE_WALL_CLOCK: these values name no instant on their own. This column is the REFERENCE PERIOD of the value, not a release wall clock, so there is no publication convention to measure it against and no era measurement was made for it",
+    "span": [
+     "1990-01-01 00:00:00",
+     "2025-12-01 00:00:00"
+    ],
+    "span_comparison": "chronological",
+    "values_missing": 0
+   },
+   "columns": {
+    "actual": {
+     "non_null": 432,
+     "null_or_empty": 0,
+     "types": {
+      "int": 432
+     }
+    },
+    "consensus_estimate": {
+     "non_null": 0,
+     "null_or_empty": 432,
+     "types": {}
+    },
+    "date": {
+     "non_null": 432,
+     "null_or_empty": 0,
+     "types": {
+      "Timestamp": 432
+     }
+    },
+    "event_name": {
+     "non_null": 432,
+     "null_or_empty": 0,
+     "types": {
+      "str": 432
+     }
+    },
+    "fred_series": {
+     "non_null": 432,
+     "null_or_empty": 0,
+     "types": {
+      "str": 432
+     }
+    },
+    "source_note": {
+     "non_null": 432,
+     "null_or_empty": 0,
+     "types": {
+      "str": 432
+     }
+    },
+    "surprise": {
+     "non_null": 0,
+     "null_or_empty": 432,
+     "types": {}
+    },
+    "transform": {
+     "non_null": 432,
+     "null_or_empty": 0,
+     "types": {
+      "str": 432
+     }
+    },
+    "transformed_actual": {
+     "non_null": 431,
+     "null_or_empty": 1,
+     "types": {
+      "float": 431
+     }
+    }
+   },
+   "field_roles": {
+    "actual": {
+     "cases_it_blocks": [],
+     "column": "actual",
+     "non_null_rows": 432,
+     "present": true
+    },
+    "cancellation_state": {
+     "cases_it_blocks": [
+      "CAL11"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "consensus": {
+     "cases_it_blocks": [
+      "CAL03",
+      "CAL06"
+     ],
+     "column": "consensus_estimate",
+     "non_null_rows": 0,
+     "present": false,
+     "reading": "COLUMN_PRESENT_BUT_EMPTY: the column exists and every row is null, which is the same absence as a missing column for any case that needs a value"
+    },
+    "historical_availability": {
+     "cases_it_blocks": [
+      "CAL09"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "observed_sequence": {
+     "cases_it_blocks": [
+      "CAL10"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "previous": {
+     "cases_it_blocks": [],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "publication_instant": {
+     "cases_it_blocks": [
+      "CAL02",
+      "CAL03",
+      "CAL10"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "receipt_instant": {
+     "cases_it_blocks": [
+      "CAL02",
+      "CAL07",
+      "CAL08",
+      "CAL12"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "reference_period": {
+     "cases_it_blocks": [],
+     "column": "date",
+     "non_null_rows": 432,
+     "present": true
+    },
+    "revision_marker": {
+     "cases_it_blocks": [
+      "CAL04",
+      "CAL10"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "schedule_instant": {
+     "cases_it_blocks": [
+      "CAL01",
+      "CAL11"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "unit": {
+     "cases_it_blocks": [],
+     "column": "transform",
+     "non_null_rows": 432,
+     "present": true
+    },
+    "vintage_version": {
+     "cases_it_blocks": [
+      "CAL04",
+      "CAL07",
+      "CAL08"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    }
+   },
+   "format": "parquet",
+   "identity": {
+    "event_column": "event_name",
+    "events": [
+     "Nonfarm Payrolls MoM"
+    ],
+    "series": [
+     "PAYEMS"
+    ],
+    "series_column": "fred_series"
+   },
+   "pandas_dtypes": {
+    "actual": "int64",
+    "consensus_estimate": "object",
+    "date": "datetime64[ns]",
+    "event_name": "object",
+    "fred_series": "object",
+    "source_note": "object",
+    "surprise": "object",
+    "transform": "object",
+    "transformed_actual": "float64"
+   },
+   "path_in_root": "economic_calendar/release_actuals/nonfarm_payrolls_mom/actuals.parquet",
+   "provenance": {
+    "declared_digest_matches_these_bytes": true,
+    "declared_sha256": "bd7f18f92c84ead2b84a928e5257f01f4d9f8a3f87f7af6e94cebc34fae62c96",
+    "description": "Economic release actuals for Nonfarm Payrolls MoM from FRED; consensus fields are intentionally blank until a free scheduled-events source is validated.",
+    "file_grain_receipt_instant": "2026-05-01T16:42:57.463292+00:00",
+    "present": true,
+    "reading": "`acquired_at` is a FILE-grain receipt clock: it dates the download, not any single release, so it cannot order two releases inside the file and is never read as `receipt_instant`",
+    "source": "FRED"
+   },
+   "reading": "measured from these bytes by data_gov.tools.inventory_fred_release_actuals.v1",
+   "resource": "fred_nonfarm_payrolls_mom_actuals",
+   "rows": 432,
+   "sha256": "bd7f18f92c84ead2b84a928e5257f01f4d9f8a3f87f7af6e94cebc34fae62c96",
+   "slug": "nonfarm_payrolls_mom",
+   "status": "MEASURED",
+   "units": {
+    "column": "transform",
+    "distinct": 1,
+    "most_common": [
+     [
+      "month_over_month_diff",
+      432
+     ]
+    ]
+   },
+   "vintages": {
+    "has_observation_clock": false,
+    "has_version_field": false,
+    "key_ladder": [
+     {
+      "examples": [],
+      "key": [
+       "fred_series",
+       "date"
+      ],
+      "keys": 432,
+      "keys_whose_rows_disagree_about_the_value": 0,
+      "keys_with_more_than_one_row": 0,
+      "most_distinct_values_on_one_key": 1
+     },
+     {
+      "examples": [],
+      "key": [
+       "date",
+       "event_name",
+       "fred_series",
+       "transform",
+       "transformed_actual",
+       "consensus_estimate",
+       "surprise",
+       "source_note"
+      ],
+      "keys": 432,
+      "keys_whose_rows_disagree_about_the_value": 0,
+      "keys_with_more_than_one_row": 0,
+      "most_distinct_values_on_one_key": 1
+     }
+    ],
+    "reading": "at the finest key this resource offers (date, event_name, fred_series, transform, transformed_actual, consensus_estimate, surprise, source_note) every key carries one value, so no earlier version of any field survives here and a point-in-time view cannot be reconstructed from these bytes",
+    "value_column": "actual",
+    "verdict": "NO_VINTAGES"
+   }
+  },
+  {
+   "bytes": 16064,
+   "clock": {
+    "column": "date",
+    "declared_timezone_aware": false,
+    "first_and_last_values_in_file_order": [
+     "1992-01-01 00:00:00",
+     "2025-12-01 00:00:00"
+    ],
+    "measured_timezone_aware": false,
+    "reading": "NAIVE_WALL_CLOCK: these values name no instant on their own. This column is the REFERENCE PERIOD of the value, not a release wall clock, so there is no publication convention to measure it against and no era measurement was made for it",
+    "span": [
+     "1992-01-01 00:00:00",
+     "2025-12-01 00:00:00"
+    ],
+    "span_comparison": "chronological",
+    "values_missing": 0
+   },
+   "columns": {
+    "actual": {
+     "non_null": 408,
+     "null_or_empty": 0,
+     "types": {
+      "float": 408
+     }
+    },
+    "consensus_estimate": {
+     "non_null": 0,
+     "null_or_empty": 408,
+     "types": {}
+    },
+    "date": {
+     "non_null": 408,
+     "null_or_empty": 0,
+     "types": {
+      "Timestamp": 408
+     }
+    },
+    "event_name": {
+     "non_null": 408,
+     "null_or_empty": 0,
+     "types": {
+      "str": 408
+     }
+    },
+    "fred_series": {
+     "non_null": 408,
+     "null_or_empty": 0,
+     "types": {
+      "str": 408
+     }
+    },
+    "source_note": {
+     "non_null": 408,
+     "null_or_empty": 0,
+     "types": {
+      "str": 408
+     }
+    },
+    "surprise": {
+     "non_null": 0,
+     "null_or_empty": 408,
+     "types": {}
+    },
+    "transform": {
+     "non_null": 408,
+     "null_or_empty": 0,
+     "types": {
+      "str": 408
+     }
+    },
+    "transformed_actual": {
+     "non_null": 407,
+     "null_or_empty": 1,
+     "types": {
+      "float": 407
+     }
+    }
+   },
+   "field_roles": {
+    "actual": {
+     "cases_it_blocks": [],
+     "column": "actual",
+     "non_null_rows": 408,
+     "present": true
+    },
+    "cancellation_state": {
+     "cases_it_blocks": [
+      "CAL11"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "consensus": {
+     "cases_it_blocks": [
+      "CAL03",
+      "CAL06"
+     ],
+     "column": "consensus_estimate",
+     "non_null_rows": 0,
+     "present": false,
+     "reading": "COLUMN_PRESENT_BUT_EMPTY: the column exists and every row is null, which is the same absence as a missing column for any case that needs a value"
+    },
+    "historical_availability": {
+     "cases_it_blocks": [
+      "CAL09"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "observed_sequence": {
+     "cases_it_blocks": [
+      "CAL10"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "previous": {
+     "cases_it_blocks": [],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "publication_instant": {
+     "cases_it_blocks": [
+      "CAL02",
+      "CAL03",
+      "CAL10"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "receipt_instant": {
+     "cases_it_blocks": [
+      "CAL02",
+      "CAL07",
+      "CAL08",
+      "CAL12"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "reference_period": {
+     "cases_it_blocks": [],
+     "column": "date",
+     "non_null_rows": 408,
+     "present": true
+    },
+    "revision_marker": {
+     "cases_it_blocks": [
+      "CAL04",
+      "CAL10"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "schedule_instant": {
+     "cases_it_blocks": [
+      "CAL01",
+      "CAL11"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "unit": {
+     "cases_it_blocks": [],
+     "column": "transform",
+     "non_null_rows": 408,
+     "present": true
+    },
+    "vintage_version": {
+     "cases_it_blocks": [
+      "CAL04",
+      "CAL07",
+      "CAL08"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    }
+   },
+   "format": "parquet",
+   "identity": {
+    "event_column": "event_name",
+    "events": [
+     "Retail Sales"
+    ],
+    "series": [
+     "RSAFS"
+    ],
+    "series_column": "fred_series"
+   },
+   "pandas_dtypes": {
+    "actual": "float64",
+    "consensus_estimate": "object",
+    "date": "datetime64[ns]",
+    "event_name": "object",
+    "fred_series": "object",
+    "source_note": "object",
+    "surprise": "object",
+    "transform": "object",
+    "transformed_actual": "float64"
+   },
+   "path_in_root": "economic_calendar/release_actuals/retail_sales_mom/actuals.parquet",
+   "provenance": {
+    "declared_digest_matches_these_bytes": true,
+    "declared_sha256": "e864c3e915675ee8dc8029f1d63a18b5400514405f24d30bfc105ac401728640",
+    "description": "Economic release actuals for Retail Sales from FRED; consensus fields are intentionally blank until a free scheduled-events source is validated.",
+    "file_grain_receipt_instant": "2026-05-01T16:44:03.095061+00:00",
+    "present": true,
+    "reading": "`acquired_at` is a FILE-grain receipt clock: it dates the download, not any single release, so it cannot order two releases inside the file and is never read as `receipt_instant`",
+    "source": "FRED"
+   },
+   "reading": "measured from these bytes by data_gov.tools.inventory_fred_release_actuals.v1",
+   "resource": "fred_retail_sales_mom_actuals",
+   "rows": 408,
+   "sha256": "e864c3e915675ee8dc8029f1d63a18b5400514405f24d30bfc105ac401728640",
+   "slug": "retail_sales_mom",
+   "status": "MEASURED",
+   "units": {
+    "column": "transform",
+    "distinct": 1,
+    "most_common": [
+     [
+      "pct_change",
+      408
+     ]
+    ]
+   },
+   "vintages": {
+    "has_observation_clock": false,
+    "has_version_field": false,
+    "key_ladder": [
+     {
+      "examples": [],
+      "key": [
+       "fred_series",
+       "date"
+      ],
+      "keys": 408,
+      "keys_whose_rows_disagree_about_the_value": 0,
+      "keys_with_more_than_one_row": 0,
+      "most_distinct_values_on_one_key": 1
+     },
+     {
+      "examples": [],
+      "key": [
+       "date",
+       "event_name",
+       "fred_series",
+       "transform",
+       "transformed_actual",
+       "consensus_estimate",
+       "surprise",
+       "source_note"
+      ],
+      "keys": 408,
+      "keys_whose_rows_disagree_about_the_value": 0,
+      "keys_with_more_than_one_row": 0,
+      "most_distinct_values_on_one_key": 1
+     }
+    ],
+    "reading": "at the finest key this resource offers (date, event_name, fred_series, transform, transformed_actual, consensus_estimate, surprise, source_note) every key carries one value, so no earlier version of any field survives here and a point-in-time view cannot be reconstructed from these bytes",
+    "value_column": "actual",
+    "verdict": "NO_VINTAGES"
+   }
+  },
+  {
+   "bytes": 121544,
+   "clock": {
+    "column": "date",
+    "declared_timezone_aware": false,
+    "first_and_last_values_in_file_order": [
+     "1990-01-01 00:00:00",
+     "2025-12-31 00:00:00"
+    ],
+    "measured_timezone_aware": false,
+    "reading": "NAIVE_WALL_CLOCK: these values name no instant on their own. This column is the REFERENCE PERIOD of the value, not a release wall clock, so there is no publication convention to measure it against and no era measurement was made for it",
+    "span": [
+     "1990-01-01 00:00:00",
+     "2025-12-31 00:00:00"
+    ],
+    "span_comparison": "chronological",
+    "values_missing": 0
+   },
+   "columns": {
+    "actual": {
+     "non_null": 9005,
+     "null_or_empty": 388,
+     "types": {
+      "float": 9005
+     }
+    },
+    "consensus_estimate": {
+     "non_null": 0,
+     "null_or_empty": 9393,
+     "types": {}
+    },
+    "date": {
+     "non_null": 9393,
+     "null_or_empty": 0,
+     "types": {
+      "Timestamp": 9393
+     }
+    },
+    "event_name": {
+     "non_null": 9393,
+     "null_or_empty": 0,
+     "types": {
+      "str": 9393
+     }
+    },
+    "fred_series": {
+     "non_null": 9393,
+     "null_or_empty": 0,
+     "types": {
+      "str": 9393
+     }
+    },
+    "source_note": {
+     "non_null": 9393,
+     "null_or_empty": 0,
+     "types": {
+      "str": 9393
+     }
+    },
+    "surprise": {
+     "non_null": 0,
+     "null_or_empty": 9393,
+     "types": {}
+    },
+    "transform": {
+     "non_null": 9393,
+     "null_or_empty": 0,
+     "types": {
+      "str": 9393
+     }
+    },
+    "transformed_actual": {
+     "non_null": 9005,
+     "null_or_empty": 388,
+     "types": {
+      "float": 9005
+     }
+    }
+   },
+   "field_roles": {
+    "actual": {
+     "cases_it_blocks": [],
+     "column": "actual",
+     "non_null_rows": 9005,
+     "present": true
+    },
+    "cancellation_state": {
+     "cases_it_blocks": [
+      "CAL11"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "consensus": {
+     "cases_it_blocks": [
+      "CAL03",
+      "CAL06"
+     ],
+     "column": "consensus_estimate",
+     "non_null_rows": 0,
+     "present": false,
+     "reading": "COLUMN_PRESENT_BUT_EMPTY: the column exists and every row is null, which is the same absence as a missing column for any case that needs a value"
+    },
+    "historical_availability": {
+     "cases_it_blocks": [
+      "CAL09"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "observed_sequence": {
+     "cases_it_blocks": [
+      "CAL10"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "previous": {
+     "cases_it_blocks": [],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "publication_instant": {
+     "cases_it_blocks": [
+      "CAL02",
+      "CAL03",
+      "CAL10"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "receipt_instant": {
+     "cases_it_blocks": [
+      "CAL02",
+      "CAL07",
+      "CAL08",
+      "CAL12"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "reference_period": {
+     "cases_it_blocks": [],
+     "column": "date",
+     "non_null_rows": 9393,
+     "present": true
+    },
+    "revision_marker": {
+     "cases_it_blocks": [
+      "CAL04",
+      "CAL10"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "schedule_instant": {
+     "cases_it_blocks": [
+      "CAL01",
+      "CAL11"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "unit": {
+     "cases_it_blocks": [],
+     "column": "transform",
+     "non_null_rows": 9393,
+     "present": true
+    },
+    "vintage_version": {
+     "cases_it_blocks": [
+      "CAL04",
+      "CAL07",
+      "CAL08"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    }
+   },
+   "format": "parquet",
+   "identity": {
+    "event_column": "event_name",
+    "events": [
+     "10Y Treasury"
+    ],
+    "series": [
+     "DGS10"
+    ],
+    "series_column": "fred_series"
+   },
+   "pandas_dtypes": {
+    "actual": "float64",
+    "consensus_estimate": "object",
+    "date": "datetime64[ns]",
+    "event_name": "object",
+    "fred_series": "object",
+    "source_note": "object",
+    "surprise": "object",
+    "transform": "object",
+    "transformed_actual": "float64"
+   },
+   "path_in_root": "economic_calendar/release_actuals/treasury_10y/actuals.parquet",
+   "provenance": {
+    "declared_digest_matches_these_bytes": true,
+    "declared_sha256": "d2b6309bc92778969480bfb0ef9d02f2727b198f0120243c5fb43880030b8929",
+    "description": "Economic release actuals for 10Y Treasury from FRED; consensus fields are intentionally blank until a free scheduled-events source is validated.",
+    "file_grain_receipt_instant": "2026-05-01T16:42:58.681681+00:00",
+    "present": true,
+    "reading": "`acquired_at` is a FILE-grain receipt clock: it dates the download, not any single release, so it cannot order two releases inside the file and is never read as `receipt_instant`",
+    "source": "FRED"
+   },
+   "reading": "measured from these bytes by data_gov.tools.inventory_fred_release_actuals.v1",
+   "resource": "fred_treasury_10y_actuals",
+   "rows": 9393,
+   "sha256": "d2b6309bc92778969480bfb0ef9d02f2727b198f0120243c5fb43880030b8929",
+   "slug": "treasury_10y",
+   "status": "MEASURED",
+   "units": {
+    "column": "transform",
+    "distinct": 1,
+    "most_common": [
+     [
+      "level",
+      9393
+     ]
+    ]
+   },
+   "vintages": {
+    "has_observation_clock": false,
+    "has_version_field": false,
+    "key_ladder": [
+     {
+      "examples": [],
+      "key": [
+       "fred_series",
+       "date"
+      ],
+      "keys": 9393,
+      "keys_whose_rows_disagree_about_the_value": 0,
+      "keys_with_more_than_one_row": 0,
+      "most_distinct_values_on_one_key": 1
+     },
+     {
+      "examples": [],
+      "key": [
+       "date",
+       "event_name",
+       "fred_series",
+       "transform",
+       "transformed_actual",
+       "consensus_estimate",
+       "surprise",
+       "source_note"
+      ],
+      "keys": 9393,
+      "keys_whose_rows_disagree_about_the_value": 0,
+      "keys_with_more_than_one_row": 0,
+      "most_distinct_values_on_one_key": 1
+     }
+    ],
+    "reading": "at the finest key this resource offers (date, event_name, fred_series, transform, transformed_actual, consensus_estimate, surprise, source_note) every key carries one value, so no earlier version of any field survives here and a point-in-time view cannot be reconstructed from these bytes",
+    "value_column": "actual",
+    "verdict": "NO_VINTAGES"
+   }
+  },
+  {
+   "bytes": 11353,
+   "clock": {
+    "column": "date",
+    "declared_timezone_aware": false,
+    "first_and_last_values_in_file_order": [
+     "1990-01-01 00:00:00",
+     "2025-12-01 00:00:00"
+    ],
+    "measured_timezone_aware": false,
+    "reading": "NAIVE_WALL_CLOCK: these values name no instant on their own. This column is the REFERENCE PERIOD of the value, not a release wall clock, so there is no publication convention to measure it against and no era measurement was made for it",
+    "span": [
+     "1990-01-01 00:00:00",
+     "2025-12-01 00:00:00"
+    ],
+    "span_comparison": "chronological",
+    "values_missing": 0
+   },
+   "columns": {
+    "actual": {
+     "non_null": 431,
+     "null_or_empty": 1,
+     "types": {
+      "float": 431
+     }
+    },
+    "consensus_estimate": {
+     "non_null": 0,
+     "null_or_empty": 432,
+     "types": {}
+    },
+    "date": {
+     "non_null": 432,
+     "null_or_empty": 0,
+     "types": {
+      "Timestamp": 432
+     }
+    },
+    "event_name": {
+     "non_null": 432,
+     "null_or_empty": 0,
+     "types": {
+      "str": 432
+     }
+    },
+    "fred_series": {
+     "non_null": 432,
+     "null_or_empty": 0,
+     "types": {
+      "str": 432
+     }
+    },
+    "source_note": {
+     "non_null": 432,
+     "null_or_empty": 0,
+     "types": {
+      "str": 432
+     }
+    },
+    "surprise": {
+     "non_null": 0,
+     "null_or_empty": 432,
+     "types": {}
+    },
+    "transform": {
+     "non_null": 432,
+     "null_or_empty": 0,
+     "types": {
+      "str": 432
+     }
+    },
+    "transformed_actual": {
+     "non_null": 431,
+     "null_or_empty": 1,
+     "types": {
+      "float": 431
+     }
+    }
+   },
+   "field_roles": {
+    "actual": {
+     "cases_it_blocks": [],
+     "column": "actual",
+     "non_null_rows": 431,
+     "present": true
+    },
+    "cancellation_state": {
+     "cases_it_blocks": [
+      "CAL11"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "consensus": {
+     "cases_it_blocks": [
+      "CAL03",
+      "CAL06"
+     ],
+     "column": "consensus_estimate",
+     "non_null_rows": 0,
+     "present": false,
+     "reading": "COLUMN_PRESENT_BUT_EMPTY: the column exists and every row is null, which is the same absence as a missing column for any case that needs a value"
+    },
+    "historical_availability": {
+     "cases_it_blocks": [
+      "CAL09"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "observed_sequence": {
+     "cases_it_blocks": [
+      "CAL10"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "previous": {
+     "cases_it_blocks": [],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "publication_instant": {
+     "cases_it_blocks": [
+      "CAL02",
+      "CAL03",
+      "CAL10"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "receipt_instant": {
+     "cases_it_blocks": [
+      "CAL02",
+      "CAL07",
+      "CAL08",
+      "CAL12"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "reference_period": {
+     "cases_it_blocks": [],
+     "column": "date",
+     "non_null_rows": 432,
+     "present": true
+    },
+    "revision_marker": {
+     "cases_it_blocks": [
+      "CAL04",
+      "CAL10"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "schedule_instant": {
+     "cases_it_blocks": [
+      "CAL01",
+      "CAL11"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    },
+    "unit": {
+     "cases_it_blocks": [],
+     "column": "transform",
+     "non_null_rows": 432,
+     "present": true
+    },
+    "vintage_version": {
+     "cases_it_blocks": [
+      "CAL04",
+      "CAL07",
+      "CAL08"
+     ],
+     "column": null,
+     "non_null_rows": 0,
+     "present": false
+    }
+   },
+   "format": "parquet",
+   "identity": {
+    "event_column": "event_name",
+    "events": [
+     "Unemployment Rate"
+    ],
+    "series": [
+     "UNRATE"
+    ],
+    "series_column": "fred_series"
+   },
+   "pandas_dtypes": {
+    "actual": "float64",
+    "consensus_estimate": "object",
+    "date": "datetime64[ns]",
+    "event_name": "object",
+    "fred_series": "object",
+    "source_note": "object",
+    "surprise": "object",
+    "transform": "object",
+    "transformed_actual": "float64"
+   },
+   "path_in_root": "economic_calendar/release_actuals/unemployment_rate/actuals.parquet",
+   "provenance": {
+    "declared_digest_matches_these_bytes": true,
+    "declared_sha256": "c6b67853acbc2c6f568d3ae9bc379c5fd9cb54ce24936ac6c70b315799221ca3",
+    "description": "Economic release actuals for Unemployment Rate from FRED; consensus fields are intentionally blank until a free scheduled-events source is validated.",
+    "file_grain_receipt_instant": "2026-05-01T16:42:57.702030+00:00",
+    "present": true,
+    "reading": "`acquired_at` is a FILE-grain receipt clock: it dates the download, not any single release, so it cannot order two releases inside the file and is never read as `receipt_instant`",
+    "source": "FRED"
+   },
+   "reading": "measured from these bytes by data_gov.tools.inventory_fred_release_actuals.v1",
+   "resource": "fred_unemployment_rate_actuals",
+   "rows": 432,
+   "sha256": "c6b67853acbc2c6f568d3ae9bc379c5fd9cb54ce24936ac6c70b315799221ca3",
+   "slug": "unemployment_rate",
+   "status": "MEASURED",
+   "units": {
+    "column": "transform",
+    "distinct": 1,
+    "most_common": [
+     [
+      "level",
+      432
+     ]
+    ]
+   },
+   "vintages": {
+    "has_observation_clock": false,
+    "has_version_field": false,
+    "key_ladder": [
+     {
+      "examples": [],
+      "key": [
+       "fred_series",
+       "date"
+      ],
+      "keys": 432,
+      "keys_whose_rows_disagree_about_the_value": 0,
+      "keys_with_more_than_one_row": 0,
+      "most_distinct_values_on_one_key": 1
+     },
+     {
+      "examples": [],
+      "key": [
+       "date",
+       "event_name",
+       "fred_series",
+       "transform",
+       "transformed_actual",
+       "consensus_estimate",
+       "surprise",
+       "source_note"
+      ],
+      "keys": 432,
+      "keys_whose_rows_disagree_about_the_value": 0,
+      "keys_with_more_than_one_row": 0,
+      "most_distinct_values_on_one_key": 1
+     }
+    ],
+    "reading": "at the finest key this resource offers (date, event_name, fred_series, transform, transformed_actual, consensus_estimate, surprise, source_note) every key carries one value, so no earlier version of any field survives here and a point-in-time view cannot be reconstructed from these bytes",
+    "value_column": "actual",
+    "verdict": "NO_VINTAGES"
+   }
+  }
+ ],
+ "root_kind": "financial_data_root",
+ "schema": "data_gov.fred_release_actuals_inventory.v1",
+ "tool": "data_gov.tools.inventory_fred_release_actuals.v1"
+}

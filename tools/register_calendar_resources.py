@@ -51,6 +51,7 @@ TOOL = "data_gov.tools.register_calendar_resources.v1"
 #: sentence is quoted from -- so a reader can check the quote instead of trusting it.
 DECLARED = {
     "archive_2011_2021": {
+        "family": "calendar",
         "lake": NOT_IN_ANY_LAKE_ROOT,
         "root": "feature_eng_root",
         "resource": "tests/data/economic_calendar_2011_2021.csv",
@@ -68,6 +69,7 @@ DECLARED = {
         "clock_is_measured": True,
     },
     "fxmacrodata_announcements": {
+        "family": "calendar",
         "lake": "financial_files",
         "root": "financial_data_root",
         "resource": "economic_calendar/release_actuals/fxmacrodata/announcements.parquet",
@@ -84,6 +86,7 @@ DECLARED = {
         "clock_is_measured": False,
     },
     "fxmacrodata_release_calendar": {
+        "family": "calendar",
         "lake": "financial_files",
         "root": "financial_data_root",
         "resource": "economic_calendar/scheduled_events/fxmacrodata/release_calendar.parquet",
@@ -98,6 +101,7 @@ DECLARED = {
         "clock_is_measured": False,
     },
     "fred_release_date_proxy": {
+        "family": "calendar",
         "lake": "financial_files",
         "root": "financial_data_root",
         "resource": "economic_calendar/scheduled_events/fred_release_date_proxy/scheduled_events.parquet",
@@ -112,6 +116,7 @@ DECLARED = {
         "clock_is_measured": False,
     },
     "fred_cpi_yoy_actuals": {
+        "family": "calendar",
         "lake": "financial_files",
         "root": "financial_data_root",
         "resource": "economic_calendar/release_actuals/cpi_yoy/actuals.parquet",
@@ -128,6 +133,57 @@ DECLARED = {
         "clock_is_measured": False,
     },
 }
+
+
+#: The nine sibling FRED actuals resources the 2026-09-26 calendar registration left out. `cpi_yoy` was
+#: registered "as representative" of them; representative is not measured, so each one is registered from its own
+#: bytes here. Two things per sibling are typed in -- the event name its own README uses and the FRED series id --
+#: and BOTH are checked rather than trusted: the quote must appear in the README file, and the series must be the
+#: series the rows carry, or the resource is refused by name instead of registered.
+FRED_SIBLINGS = {
+    "core_cpi_yoy": ("Core CPI YoY", "CPILFESL"),
+    "core_pce_yoy": ("PCE Core YoY", "PCEPILFE"),
+    "fed_funds": ("Fed Funds", "FEDFUNDS"),
+    "gdp_qoq_annualized": ("GDP QoQ Annualized", "A191RL1Q225SBEA"),
+    "initial_claims": ("Initial Claims", "ICSA"),
+    "nonfarm_payrolls_mom": ("Nonfarm Payrolls MoM", "PAYEMS"),
+    "retail_sales_mom": ("Retail Sales", "RSAFS"),
+    "treasury_10y": ("10Y Treasury", "DGS10"),
+    "unemployment_rate": ("Unemployment Rate", "UNRATE"),
+}
+
+
+def _fred_sibling(slug: str, event: str, series: str) -> dict:
+    quote = (f"Economic release actuals for {event} from FRED; consensus fields are intentionally blank until a "
+             "free scheduled-events source is validated.")
+    return {
+        "family": "fred_release_actuals",
+        "lake": "financial_files",
+        "root": "financial_data_root",
+        "resource": f"economic_calendar/release_actuals/{slug}/actuals.parquet",
+        "series": series,
+        "what_it_is": (f"{event} release actuals from FRED (series {series}), one row per reference period of the "
+                       "value, with a consensus column the producer left empty on purpose. One of the nine sibling "
+                       "FRED actual resources under `economic_calendar/release_actuals/` that the 2026-09-26 "
+                       "calendar registration left unregistered, having registered `cpi_yoy` as representative of "
+                       "them; this registration measures this one instead of inheriting that reading"),
+        "documented_by": f"economic_calendar/release_actuals/{slug}/README.md",
+        "quote": quote,
+        "documented_by_reading": f"the producer's README states: '{quote}'",
+        "publication_kind": "NO_PUBLICATION_INSTANT_OF_ANY_KIND",
+        "publication_why": ("the only time column is `date`, the REFERENCE PERIOD of the value. Nothing in the file "
+                            "says when the number was released, and the reference period is not a release date"),
+        "clock_is_measured": False,
+    }
+
+
+DECLARED.update({f"fred_{slug}_actuals": _fred_sibling(slug, event, series)
+                 for slug, (event, series) in FRED_SIBLINGS.items()})
+
+#: `--family` selects which declarations a run is about. It defaults to the five calendar resources so a repeat of
+#: the 2026-09-26 run is the same run: adding declarations to this file must never change what an existing
+#: invocation registers.
+FAMILIES = ("calendar", "fred_release_actuals", "all")
 
 
 def _file_digest(path):
@@ -440,12 +496,14 @@ def _study_refusal(carries, publication_kind):
 
 
 def build_registrations(inventory, clock_artifact, inventory_ref, clock_ref, roots, actor, registered_at,
-                        lake_inventory=None):
-    """The five registrations, derived. A resource the inventory could not measure, or whose bytes have moved since it
-    was measured, is REFUSED by name and not registered from stale facts."""
+                        lake_inventory=None, family="calendar"):
+    """The declared family's registrations, derived. A resource the inventory could not measure, or whose bytes have
+    moved since it was measured, is REFUSED by name and not registered from stale facts."""
     records = {r["resource"]: r for r in inventory.get("resources", [])}
     out, refused = [], []
     for name, declared in DECLARED.items():
+        if family != "all" and declared.get("family", "calendar") != family:
+            continue
         record = records.get(name)
         if record is None:
             refused.append({"resource": name, "code": "NOT_IN_THE_INVENTORY",
@@ -466,6 +524,25 @@ def build_registrations(inventory, clock_artifact, inventory_ref, clock_ref, roo
             refused.append({"resource": name, "code": "BYTES_ABSENT",
                             "why": f"{declared['resource']} is not under the root given for it"})
             continue
+        quote = declared.get("quote")
+        if quote:
+            documentation = Path(root) / declared["documented_by"]
+            text = documentation.read_text(encoding="utf-8") if documentation.is_file() else ""
+            if quote not in text:
+                refused.append({"resource": name, "code": "QUOTE_NOT_FOUND_IN_THE_DOCUMENTATION",
+                                "why": (f"the sentence this registration attributes to {declared['documented_by']} "
+                                        "is not in that file, so `source_documentation` would quote something the "
+                                        "producer did not write")})
+                continue
+        series = declared.get("series")
+        if series:
+            measured_series = ((record.get("identity") or {}).get("series")) or []
+            if measured_series != [series]:
+                refused.append({"resource": name, "code": "DECLARED_SERIES_DOES_NOT_MATCH_THE_BYTES",
+                                "why": (f"this registration declares FRED series {series!r} and the rows carry "
+                                        f"{measured_series!r}; a catalog row naming the wrong series is worse than "
+                                        "no row")})
+                continue
         measured_sha = _file_digest(path)
         if measured_sha != record.get("sha256"):
             refused.append({"resource": name, "code": "BYTES_MOVED_SINCE_THE_INVENTORY",
@@ -549,6 +626,16 @@ def consensus_overlap(registrations):
     verdict = ("NO_CONSENSUS_SOURCE_OVERLAPS_AN_OBSERVED_CLOCK_SOURCE"
                if pairs and all(p.get("overlap") == "NONE" for p in pairs)
                else ("NO_PAIR_TO_COMPARE" if not pairs else "AN_OVERLAP_EXISTS"))
+    if verdict == "NO_PAIR_TO_COMPARE":
+        # this run registered no consensus source, or no observed-clock source, or neither. Saying "the windows do
+        # not touch" here would assert a comparison that was not made, so the row says what it compared: nothing.
+        return {"verdict": verdict, "pairs": pairs,
+                "consensus_resources": [r["resource"] for r, _, _ in consensus],
+                "observed_clock_resources": [r["resource"] for r, _, _ in observed],
+                "reading": ("no window comparison was made for this registration: the resources registered in this "
+                            "run carry no consensus, or no observed publication instant, or neither, so there was no "
+                            "pair to compare. This is NOT a finding that some other pair overlaps or does not -- read "
+                            "the rows of the resources that carry those halves for that")}
     return {"verdict": verdict, "pairs": pairs,
             "consensus_resources": [r["resource"] for r, _, _ in consensus],
             "observed_clock_resources": [r["resource"] for r, _, _ in observed],
@@ -571,6 +658,9 @@ def main(argv=None):
     parser.add_argument("--registered-at", default=None,
                         help="the receipt clock, with an offset (default: now). It is outside the key")
     parser.add_argument("--evidence-out", default=None, help="write the canonical rows here for review")
+    parser.add_argument("--family", default="calendar", choices=FAMILIES,
+                        help="which declared family to register (default: the five calendar resources, so an "
+                             "existing invocation keeps registering exactly what it did)")
     parser.add_argument("--dry-run", action="store_true", help="derive and print; write nothing")
     args = parser.parse_args(argv)
 
@@ -581,7 +671,7 @@ def main(argv=None):
 
     registrations, refused = build_registrations(inventory, clock_artifact, inventory_ref, clock_ref,
                                                  roots, args.actor, registered_at,
-                                                 _read_lake_inventory(args.lake_inventory))
+                                                 _read_lake_inventory(args.lake_inventory), args.family)
     overlap = consensus_overlap(registrations)
     for registration in registrations:
         registration["facts"]["carries"]["consensus_overlap_with_an_observed_clock_source"] = overlap
@@ -606,7 +696,9 @@ def main(argv=None):
                         "absences": [a["code"] for a in row["facts"]["absences"]],
                         "row": row})
 
+    states = sorted({r["facts"]["governed_delivery"]["state"] for r in registrations})
     report = {"schema": "data_gov.calendar_registration_run.v1", "tool": TOOL,
+              "family": args.family,
               "registered_at": registered_at, "actor": args.actor,
               "registry": str(args.registry),
               "inventory_artifact": inventory_ref, "clock_artifact": clock_ref,
@@ -615,9 +707,8 @@ def main(argv=None):
               "refused": refused,
               "consensus_overlap": overlap,
               "results": results,
-              "grants": ("NOTHING. Four of the five resources stay CLOSED_NO_AVAILABILITY_CONTRACT and the fifth is "
-                         "CLOSED_NOT_IN_ANY_LAKE_ROOT. Registering a resource records what is known and missing about "
-                         "it; it authorizes no delivery")}
+              "grants": ("NOTHING. Every resource of this run stays " + ", ".join(states) + ". Registering a "
+                         "resource records what is known and missing about it; it authorizes no delivery")}
     if args.evidence_out:
         Path(args.evidence_out).parent.mkdir(parents=True, exist_ok=True)
         Path(args.evidence_out).write_text(

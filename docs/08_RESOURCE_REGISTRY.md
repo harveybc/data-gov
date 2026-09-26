@@ -149,7 +149,84 @@ tests — not something a registration may do on its own.
   registration records that a resource is closed, it does not close it. The
   closure of the four financial-lake resources is the pre-existing fail-closed
   behaviour of the empty `resource_contracts`, not an effect of registering them.
-- **One FRED actuals resource is registered, not twelve.** `cpi_yoy` is
-  registered as representative; the eleven sibling resources under
-  `economic_calendar/release_actuals/` are not registered, and their absences are
-  therefore not catalog facts yet.
+- ~~**One FRED actuals resource is registered, not twelve.**~~ Closed on
+  2026-09-26 by the nine sibling registrations below. The count in this bullet was
+  wrong: there are **ten** FRED directories under
+  `economic_calendar/release_actuals/`, not twelve, and `cpi_yoy` is one of them,
+  so **nine** siblings were unregistered rather than eleven. See *The nine sibling
+  FRED actuals registrations* below.
+
+## The nine sibling FRED actuals registrations (2026-09-26)
+
+`cpi_yoy` was registered *"as representative of the twelve sibling FRED actual
+resources"*. Representative is not measured, and the count was wrong: the
+directory holds **eleven** entries, ten of them FRED (`fxmacrodata` is
+FXMacroData and was registered separately) and one of those ten is `cpi_yoy`
+itself. So **nine** siblings were unregistered, and each one is now registered
+from its own bytes rather than from its resemblance to `cpi_yoy`.
+
+| resource (`economic_calendar/release_actuals/<slug>/actuals.parquet`) | FRED series | rows | `date` window | absences | `facts_sha256` |
+|---|---|---|---|---|---|
+| `core_cpi_yoy` | `CPILFESL` | 432 | 1990-01-01 → 2025-12-01 | 7 | `fee3cc9b815a67be` |
+| `core_pce_yoy` | `PCEPILFE` | 432 | 1990-01-01 → 2025-12-01 | 7 | `d94a6e41cefa7008` |
+| `fed_funds` | `FEDFUNDS` | 432 | 1990-01-01 → 2025-12-01 | 7 | `8a0296972a16b4ac` |
+| `gdp_qoq_annualized` | `A191RL1Q225SBEA` | 144 | 1990-01-01 → 2025-10-01 | 7 | `14721c01cd710c71` |
+| `initial_claims` | `ICSA` | 1,878 | 1990-01-06 → 2025-12-27 | 7 | `669a62facdc24d23` |
+| `nonfarm_payrolls_mom` | `PAYEMS` | 432 | 1990-01-01 → 2025-12-01 | 7 | `b936c0285a328e61` |
+| `retail_sales_mom` | `RSAFS` | 408 | 1992-01-01 → 2025-12-01 | 7 | `ad8d0ebd1f9341a7` |
+| `treasury_10y` | `DGS10` | 9,393 | 1990-01-01 → 2025-12-31 | 7 | `762315a06c9e018b` |
+| `unemployment_rate` | `UNRATE` | 432 | 1990-01-01 → 2025-12-01 | 7 | `90af8a8b5f10f126` |
+
+All nine are lake `financial_files`, `NO_PUBLICATION_INSTANT_OF_ANY_KIND`,
+`observed: false`, `study_refusal: NEITHER_CONSENSUS_NOR_OBSERVED_PUBLICATION`,
+`governed_delivery: CLOSED_NO_AVAILABILITY_CONTRACT` and
+`execution_authorized: false`. The 63 absences are seven per resource — the same
+seven `cpi_yoy` carries — and each one names what was looked for.
+
+**Derived, not asserted.** `tools/inventory_fred_release_actuals.py` measures each
+file (digest, rows, every column's non-null count and value types, dtypes, the
+`date` span and whether its values are timezone-aware, the unit column, the
+vintage key ladder, the series and event the rows carry, and whether the
+`provenance.json` digest is these bytes) into
+`data_gov.fred_release_actuals_inventory.v1`, which
+`tools/register_calendar_resources.py --family fred_release_actuals` then
+consumes — the same registrar, not a second one. Only two things per resource are
+typed in, and both are checked rather than trusted: the sentence attributed to the
+README must appear in that file (`QUOTE_NOT_FOUND_IN_THE_DOCUMENTATION`) and the
+declared FRED series must be the series the rows carry
+(`DECLARED_SERIES_DOES_NOT_MATCH_THE_BYTES`). Bytes that moved since the
+inventory are still refused `BYTES_MOVED_SINCE_THE_INVENTORY`.
+
+**The role assignment is carried over under a measurement, never a resemblance.**
+Which column plays which catalog role is declared once in the producer; the
+*blocked-case list* of each role is the upstream `m5phet.calendar_inventory.v1`
+record of `cpi_yoy`, carried over only to files whose column set is measured
+identical to that sibling's. A file whose columns differ is recorded
+`REFUSED_COLUMN_SET_DIFFERS_FROM_THE_MEASURED_SIBLING` and the registrar refuses
+it `INVENTORY_STATUS_...` rather than registering guessed roles. Run on the real
+`cpi_yoy` bytes the producer reproduces the upstream record exactly — digest,
+bytes, rows, every column's counts and types, dtypes, units, the vintage key
+ladder and verdict, and all thirteen roles with their case lists.
+
+**What stays unknown, with the reason.** `clock.evidence` is `UNKNOWN` and
+`eras_status` is `NOT_MEASURED` for all nine: `date` is the reference period of
+the value, naive in the bytes, with no producer statement of zone and no release
+wall clock to measure it against, so the catalog declares no zone rather than
+reading it as UTC, and `NO_TIMEZONE_DECLARED_BY_THE_SOURCE` is declared.
+`inventoried` is `UNKNOWN` with `NO_LAKE_INVENTORY_SNAPSHOT_GIVEN`: the snapshot
+the calendar run used is not retained anywhere, and a fresh filesystem walk by
+this tool would show that a path exists, not that the deployed lake walked it.
+`consensus_overlap` is `NO_PAIR_TO_COMPARE`, and its reading says that no window
+comparison was made instead of repeating the calendar rows' finding.
+
+**What registering them changed about access: nothing.** The catalog holds 23
+rows over 14 slots, `replay → ALL_ROWS_RE_DERIVED`, 0 quarantined. Re-reading the
+same nine resources is nine `DUPLICATE`s and writes no row, because the receipt
+clock is outside the key. No row of the five calendar slots was rewritten or
+revised: the evidence collector refuses to write if any of their facts digests
+moved.
+
+**Still not registered.** Everything outside
+`economic_calendar/release_actuals/`: the ~150 FRED series under
+`macro_economic/fred/` are a different family and no measurement of them exists
+here.
