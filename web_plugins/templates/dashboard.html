@@ -39,7 +39,7 @@
                   <p class="mb-1">
                     <span class="badge badge-info">{{ card.meta.kind or 'Unclassified' }}</span>
                     {% if card.meta.engine %}<span class="badge badge-secondary">{{ card.meta.engine }}</span>{% endif %}
-                    <span class="badge badge-secondary">{{ card.resources }} resources</span>
+                    {% if card.unreachable %}<span class="badge badge-warning" title="{{ card.unreachable }}">unreachable &mdash; inventory unknown</span>{% else %}<span class="badge badge-secondary">{{ card.resources }} resources</span>{% endif %}
                     <span class="badge badge-success">{{ card.requests }} ops</span>
                   </p>
                   <p class="small mb-1">Host free {{ fmt_bytes(card.storage.host_free) }} / {{ fmt_bytes(card.storage.host_total) }}</p>

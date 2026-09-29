@@ -72,7 +72,11 @@ class Plugin:
             self._raise_http(exc.code, body)
             raise
         except URLError as exc:
-            raise RuntimeError(f"lake unreachable: {exc}") from exc
+            # LakeUnreachable, by name, not a bare RuntimeError: a transport failure is a
+            # DIFFERENT FACT from the lake answering something we did not like, and the web layer
+            # maps it to 503 so a client classifies it as transient.  `_open` already did this;
+            # `_get` did not, so every buffered read reported an outage as an ordinary error.
+            raise LakeUnreachable(f"lake unreachable: {exc}") from exc
 
     def _open(self, path: str, params=None, method="GET", json_body=None):
         """Streamed request: a connect timeout only; the test hook buffers the same surface."""
@@ -109,8 +113,17 @@ class Plugin:
             raise RuntimeError(err)
 
     def describe(self):
+        """Degrades on an unreachable lake, but SAYS SO.
+
+        This one is for display, so it still answers rather than raising -- but it no longer
+        answers as though the lake were healthy.  `reachable` is the field a dashboard reads to
+        show "unreachable" instead of a confident description of a store that is not there.
+        """
+        unreachable = None
         try:
             remote = self._get("/api/v1/describe")
+        except LakeUnreachable as exc:
+            remote, unreachable = {}, str(exc)
         except RuntimeError:
             remote = {}
         return {
@@ -119,25 +132,52 @@ class Plugin:
             "description": self.params.get("description") or remote.get("description"),
             **store_metadata(self.params, remote=remote),
             "root_path": remote.get("root_path") or self.params.get("base_url"),
+            "reachable": unreachable is None,
+            "unreachable_reason": unreachable,
         }
 
     def storage(self):
+        """As `describe`: still answers, but zeroes are labelled as an outage, not as emptiness."""
+        unreachable = None
         try:
-            return self._get("/api/v1/storage")
+            payload = self._get("/api/v1/storage")
+        except LakeUnreachable as exc:
+            unreachable = str(exc)
         except RuntimeError:
-            return {
-                "host_total": 0,
-                "host_used": 0,
-                "host_free": 0,
-                "lake_bytes": 0,
-                "root": self.params.get("base_url"),
-            }
+            unreachable = None
+        else:
+            payload.setdefault("reachable", True)
+            payload.setdefault("unreachable_reason", None)
+            return payload
+        return {
+            "host_total": 0,
+            "host_used": 0,
+            "host_free": 0,
+            "lake_bytes": 0,
+            "root": self.params.get("base_url"),
+            "reachable": False,
+            "unreachable_reason": unreachable,
+        }
 
     def discover(self):
-        try:
-            payload = self._get("/api/v1/discover")
-        except RuntimeError:
-            return []
+        """A lake that cannot be reached REFUSES.  It does not report an empty inventory.
+
+        This used to be `except RuntimeError: return []`, and that is a governance false green.
+        An empty list is a POSITIVE claim -- "I reached this lake and it holds nothing" -- so
+        returning it for a lake nobody reached converts an outage into an apparent success.  The
+        preflight goes green, the caller records `discover` ALLOW, and the failure resurfaces
+        later and somewhere else as a result that reads like "no resources".  On 2026-09-27 that
+        is exactly what happened: a `discover` on a lake whose service had been stopped four days
+        earlier was recorded as ALLOW.
+
+        `reachable and empty` and `unreachable` are different facts.  This returns the first and
+        raises the second, by name, so the web layer can answer 503 and the accounting event can
+        record something other than `allow`.
+
+        Nothing else is swallowed either: a 401, a 403 or a 500 from the store is also not an
+        empty inventory, and each now reaches the caller as its own exception type.
+        """
+        payload = self._get("/api/v1/discover")
         return payload.get("resources") or payload.get("items") or []
 
     def list_resources(self):

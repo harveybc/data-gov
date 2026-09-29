@@ -356,13 +356,23 @@ class Plugin:
             cards = []
             for lake_id in allowed:
                 lake = lakes_map[lake_id]
+                # discover() now refuses for an unreachable lake instead of returning [].  The
+                # dashboard must therefore not treat that as zero resources -- that was the whole
+                # false green -- and it must not 500 the page either.  `resources: None` with
+                # `unreachable` set is how a card says "unknown", and the template falls back to
+                # rendering nothing for a null count.
+                try:
+                    resources, unreachable = len(lake.discover()), None
+                except LakeUnreachable as exc:
+                    resources, unreachable = None, str(exc)
                 cards.append(
                     {
                         "id": lake_id,
                         "meta": lake.describe(),
                         "storage": lake.storage(),
                         "requests": plugins()["accounting"].request_count(lake_id),
-                        "resources": len(lake.discover()),
+                        "resources": resources,
+                        "unreachable": unreachable,
                     }
                 )
             return render_template(
@@ -370,7 +380,10 @@ class Plugin:
                 cards=cards,
                 warnings=plugins()["accounting"].warnings(),
                 total_requests=sum(c["requests"] for c in cards),
-                total_resources=sum(c["resources"] for c in cards),
+                # an unreachable lake contributes nothing to the total AND is counted as unknown,
+                # so the headline figure is never quietly short by a lake nobody could reach
+                total_resources=sum(c["resources"] or 0 for c in cards),
+                unreachable_lakes=[c["id"] for c in cards if c["unreachable"]],
             )
 
         @app.route("/lakes/<lake_id>")
@@ -385,11 +398,22 @@ class Plugin:
                 flash("Lake not available.", "warning")
                 return redirect(url_for("dashboard"))
             lake = lakes_map[lake_id]
+            # As on the dashboard: an unreachable lake must not render as a lake with no
+            # resources.  The page still opens -- its logs and statistics are local and remain
+            # useful during an outage -- and it says plainly that the inventory is unknown.
+            # `unreachable` goes to the template, which renders a banner saying the inventory is
+            # unknown rather than empty.  Deliberately not a flash: base.html has no flash block,
+            # so a flashed message here would sit unrendered in the session instead of being read.
+            try:
+                resources, unreachable = lake.discover(), None
+            except LakeUnreachable as exc:
+                resources, unreachable = [], str(exc)
             return render_template(
                 "lake.html",
                 meta=lake.describe(),
                 storage=lake.storage(),
-                resources=lake.discover(),
+                resources=resources,
+                unreachable=unreachable,
                 logs=plugins()["accounting"].logs(lake_id),
                 by_verb=plugins()["accounting"].stats_by_verb(lake_id),
                 by_actor=plugins()["accounting"].stats_by_actor(lake_id),
@@ -426,20 +450,45 @@ class Plugin:
                 return err
             lake_id = request.args.get("lake")
             ok, reason = plugins()["access"].authorize(principal, lake_id, "discover")
-            plugins()["accounting"].record(
-                actor=principal["username"],
-                lake_id=lake_id,
-                verb="discover",
-                decision="allow" if ok else "deny",
-                warning=reason,
-                experiment_key=request.headers.get("X-Experiment-Key"),
-            )
+
+            def _record(decision, warning=None):
+                plugins()["accounting"].record(
+                    actor=principal["username"],
+                    lake_id=lake_id,
+                    verb="discover",
+                    decision=decision,
+                    warning=warning,
+                    experiment_key=request.headers.get("X-Experiment-Key"),
+                )
+
             if not ok:
+                _record("deny", reason)
                 return json_error(403, reason or "forbidden")
             lake = plugins()["lakes"].get(lake_id)
             if not lake:
+                _record("deny", "unknown lake")
                 return json_error(404, "unknown lake")
-            return jsonify({"resources": lake.discover()})
+            # The outcome is recorded AFTER the lake has answered, not before it is asked.  This
+            # route used to write `allow` and only then call discover(), so an outage was recorded
+            # as a successful discovery -- and because the adapter returned [] for an unreachable
+            # lake, the client got 200 with an empty inventory.  Both halves of that false green
+            # are closed here: `unreachable` is its own decision in the ledger, and 503 with the
+            # lake named is its own answer on the wire.
+            try:
+                resources = lake.discover()
+            except LakeUnreachable as exc:
+                _record("unreachable", str(exc))
+                return json_error(
+                    503,
+                    f"lake '{lake_id}' is unreachable, so its inventory is UNKNOWN, not empty: {exc}",
+                    lake=lake_id,
+                    reachable=False,
+                )
+            _record("allow", reason)
+            # `reachable` is explicit so that an empty inventory is self-describing: a caller can
+            # tell "I reached this lake and it holds nothing" from "nobody reached this lake"
+            # without having to infer it from the status code alone.
+            return jsonify({"resources": resources, "reachable": True, "lake": lake_id})
 
         @app.route("/api/v1/coverage")
         def api_coverage():

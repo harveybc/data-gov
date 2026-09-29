@@ -14,6 +14,14 @@ class Plugin:
         self.params.update(kwargs)
 
     def sync_lake(self, lake_plugin):
+        """Propagates LakeUnreachable rather than caching an empty inventory.
+
+        This is deliberate and it is the same rule as the discover route's.  Caching `[]` for a
+        lake nobody could reach would put the false green in the CATALOG, where it would outlive
+        the outage: every later `resources(lake_id)` would answer "this lake holds nothing" with
+        no way left to tell that nobody ever asked it.  A sync that could not reach its lake has
+        not synced, so it fails and the previous cache entry, if any, is left untouched.
+        """
         lake_id = lake_plugin.params.get("lake_id")
         self.cache[lake_id] = lake_plugin.list_resources()
         return self.cache[lake_id]
