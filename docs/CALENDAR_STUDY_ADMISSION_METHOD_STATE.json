@@ -1,0 +1,22 @@
+{
+  "schema": "dgpd_project_state.v1",
+  "project_id": "calendar-offline-study-admission",
+  "objective": "Make a read-only, as-of catalog admission decision for explicitly pinned calendar-study resources.",
+  "current_stage": "S12_ALPHA_ACCEPTANCE",
+  "requirements": [
+    {"id": "CAL-ADM-01", "text": "Select only the registered revision known at T and require exact pins."},
+    {"id": "CAL-ADM-02", "text": "Refuse closed or unknown governed availability by name."},
+    {"id": "CAL-ADM-03", "text": "Require measured consensus/observed coverage overlap when requested."},
+    {"id": "CAL-ADM-04", "text": "Read a captured full-row snapshot without source, registry, service or writes."}
+  ],
+  "traceability_file": "docs/08_RESOURCE_REGISTRY.md",
+  "evidence": ["tests/unit/test_calendar_study_admission.py"],
+  "next_allowed_actions": ["Review snapshot trust assumptions and integrate branch"],
+  "blocked_actions": ["Do not claim delivery authorization or causal identification", "Do not read mutable source files during admission"],
+  "open_decisions": ["A signed, complete snapshot format would be needed for adversarial provenance"],
+  "history": [
+    {"stage": "S0_DISCOVERY", "event": "Inspected registry row identity, known_at semantics and calendar registration evidence"},
+    {"stage": "S8_UNIT_TEST_DESIGN", "event": "Wrote causal-leakage, availability, overlap, integrity and CLI acceptance tests before implementation"},
+    {"stage": "S12_ALPHA_ACCEPTANCE", "event": "Focused offline verification; exact test count recorded in commit report"}
+  ]
+}

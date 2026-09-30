@@ -142,6 +142,59 @@ tests — not something a registration may do on its own.
 
 ## What is not implemented
 
+### Offline study admission
+
+`data_gov.calendar_study_admission.admit_study(snapshot, as_of, requirements)`
+evaluates a **full-row**, all-revisions registry snapshot without opening the
+registry directory or any source file. The CLI accepts the same JSON and exits
+`0` on `ADMITTED_OFFLINE`, `2` on a named refusal:
+
+```bash
+python -m data_gov.resource_registration --registry var/registry --json > /tmp/calendar-registry-snapshot.json
+python -m data_gov.calendar_study_admission \
+  --snapshot /tmp/calendar-registry-snapshot.json \
+  --as-of 2026-09-26T12:00:00Z \
+  --requirements /tmp/calendar-study-requirements.json
+```
+
+The requirements file is structured JSON, for example:
+
+```json
+{
+  "resources": [
+    {"lake": "financial_files", "resource": "economic_calendar/release_actuals/fxmacrodata/announcements.parquet", "row_sha256": "<64-character registry row digest>", "content_sha256": "<64-character measured bytes digest>"}
+  ],
+  "require_governed_delivery": true,
+  "require_consensus_observed_overlap": true
+}
+```
+
+Supply all study inputs, including a consensus source, in `resources`. Each pin
+must match the revision known at the `--as-of` instant. The result includes the
+selected revision, receipt time, bytes digest, delivery state, coverage and
+each consensus/observed coverage comparison. Named refusals include
+`RESOURCE_NOT_KNOWN_AT_T`, `RESOURCE_REVISION_MISMATCH`,
+`GOVERNED_DELIVERY_UNAVAILABLE`, `AVAILABILITY_UNKNOWN`,
+`CONSENSUS_SOURCE_MISSING`, `OBSERVED_PUBLICATION_SOURCE_MISSING`,
+`COVERAGE_UNKNOWN`, and `NO_CONSENSUS_OBSERVED_OVERLAP`.
+
+This is catalog-only admission. A snapshot must be captured from the trusted
+registry and retained with the study; a partial or independently edited snapshot
+cannot establish catalog completeness. The row digests detect accidental edits,
+not forgery by someone able to replace both rows and pins. `ADMITTED_OFFLINE`
+does not verify current source bytes, issue a governed delivery, or identify a
+causal effect. Set `require_governed_delivery` or
+`require_consensus_observed_overlap` to `false` only when the study explicitly
+does not require that property; the decision records the flags supplied.
+
+Traceability for this independent addition: `CAL-ADM-01` (as-of revision and
+future exclusion) is tested by `test_future_row_cannot_cure_a_refusal_and_future_only_row_is_absent`;
+`CAL-ADM-02` (availability fail-closed) by `test_unknown_availability_and_nonoverlap_are_named`
+and `test_unknown_delivery_state_is_not_treated_as_open`; `CAL-ADM-03`
+(measured overlap and absent roles) by `test_unknown_coverage_and_missing_role_fail_closed`;
+`CAL-ADM-04` (snapshot integrity and read-only CLI) by
+`test_tampered_snapshot_cannot_admit` and `test_cli_reads_snapshot_without_writing_it`.
+
 - **No web or HTTP surface.** The registry is read by its CLI and its Python
   API. It is not exposed through `web_plugins/default_web.py`, so the operator
   console does not show it and no consumer can query it over HTTP yet.
