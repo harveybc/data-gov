@@ -16,3 +16,4 @@ examples/config/local.json
 .coverage
 htmlcov/
 .DS_Store
+build/

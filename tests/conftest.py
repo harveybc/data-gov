@@ -10,10 +10,10 @@ from pathlib import Path
 
 import pytest
 
-from app.config import DEFAULT_VALUES
-from app.config_merger import merge_config
-from app.main import GROUPS, _repo_root, assemble, check_startup
-from app.plugin_loader import get_plugin_params
+from data_gov.config import DEFAULT_VALUES
+from data_gov.config_merger import merge_config
+from data_gov.main import GROUPS, _repo_root, assemble, check_startup
+from data_gov.plugin_loader import get_plugin_params
 
 SALT = "datagov-test-salt"
 HOLD_OUT = "2025-01-01"

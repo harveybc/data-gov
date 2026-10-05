@@ -15,6 +15,7 @@ host the source datasets or replace the database that stores experiment results.
 - [Quickstart](#quickstart)
 - [Web interfaces](#web-interfaces)
 - [Connect a data lake](#connect-a-data-lake)
+- [Register a resource and its absences](#register-a-resource-and-its-absences)
 - [Connect a warehouse](#connect-a-warehouse)
 - [Run a governed experiment](#run-a-governed-experiment)
 - [Use with a coding agent](#use-with-a-coding-agent)
@@ -92,10 +93,14 @@ reporting API; they do not receive a database connection for direct INSERTs.
 
 ## Quickstart
 
-Use **isolated service environments**. Legacy adapters share names such
-as `app` and `web_plugins`; co-installing those can resolve the wrong modules.
-The new hosts and providers use distinct package namespaces and were also tested
-together in a clean, dedicated store environment.
+Use **one Python environment per service**. The application package is
+`data_gov` (renamed from `app` on 2026-09-25, because every sibling
+repository ships its own top-level `app` and the installed console script
+resolved into theirs); the plugin packages still share names such as
+`web_plugins` and `pipeline_plugins`, so co-installing services can still
+resolve the wrong plugin modules.
+The new reusable hosts and providers use distinct application namespaces and
+were also tested together in a clean, dedicated store environment.
 Python 3.12 is the tested version for this guide. The package does not declare
 an enforced minimum Python version. No GPU is needed.
 
@@ -107,7 +112,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 pip install -e .
 python scripts/issue_credentials.py
-python -m app.main --help
+python -m data_gov.main --help
 python -m pytest tests -q
 ```
 
@@ -237,6 +242,35 @@ These are entries to merge into the existing lists, not standalone complete
 governance configurations. `deny_from` is an example project boundary, not a
 universal cutoff for every dataset.
 
+## Register a resource and its absences
+
+A resource contract is executed by a lake on a delivery. A **registration** is a
+statement of knowledge about a resource, and the knowledge that matters most is
+usually what is missing: a calendar archive with a consensus and no publication
+clock cannot support an event study, and a catalog that lists only its columns
+lets a study discover that in an analysis instead of being refused.
+
+`data_gov/resource_registration.py` is an append-only, digest-keyed registry for
+exactly that. Each row carries what the resource is, where it lives, its
+coverage window, its declared clock and era boundaries, whether its publication
+instant is observed or assumed, whether it carries consensus or only actuals, a
+**named absence list**, and the digest of what was registered. The receipt clock
+is outside the key, so re-reading an unchanged resource is a duplicate and not a
+revision; a row is never rewritten (`ROW_REWRITE_REFUSED`), and `known_at(T)`
+answers with the catalog as it stood at T.
+
+```bash
+python -m data_gov.resource_registration --registry var/registry
+python -m data_gov.resource_registration --registry var/registry --known-at 2026-09-26T12:00:00Z --replay
+```
+
+Registering **grants nothing**: `execution_authorized` is `False` in every row,
+and a resource with no availability contract stays closed. The registry has no
+HTTP surface and nothing in the delivery path consults it. See
+[the resource registry](docs/08_RESOURCE_REGISTRY.md) for the key discipline, the
+closed vocabularies, and the five economic-calendar resources registered on
+2026-09-26.
+
 ## Connect a warehouse
 
 Install [data-warehouse](https://github.com/harveybc/data-warehouse) and
@@ -362,7 +396,7 @@ and exact commits instead of local machine paths.
 | `operator_config_path` | Optional path for the pending operator configuration |
 
 Merge precedence is plugin defaults, application defaults, JSON, then
-**long-form CLI flags**. Run `python -m app.main --help` for supported flags.
+**long-form CLI flags**. Run `python -m data_gov.main --help` for supported flags.
 Relative storage paths are resolved by the application's entry point; prefer
 explicit absolute paths in deployed configs. Preserve existing IDs when
 moving a service to another host.
@@ -392,11 +426,11 @@ also require `X-Experiment-Key`. Flow v3 deliveries bind
 | `GET /api/v1/experiments/<key>/usage` | Experiment usage history |
 | `GET /api/v1/datasets/<sha>/usage` | Delivered-dataset usage history |
 
-[`app.client.DataGovClient`](app/client.py) provides `lakes`, `resources`,
+[`data_gov.client.DataGovClient`](data_gov/client.py) provides `lakes`, `resources`,
 `coverage`, `query`, `submit_campaign`, `governed_download`, `report_terminal`
 and `reconcile_campaign`. Methods return an HTTP status and payload; callers
 must handle non-success statuses. Exact bodies are defined in
-[`app/governance.py`](app/governance.py) and [Flow v3](docs/06_FLOW_V3_FAILSAFE.md).
+[`data_gov/governance.py`](data_gov/governance.py) and [Flow v3](docs/06_FLOW_V3_FAILSAFE.md).
 
 ## Testing and verification
 
@@ -449,7 +483,8 @@ Do not silently delete failed runs or pending outcomes to clear a dashboard.
 Register plugins with setuptools entry points and install their distributions
 in the service environment. The JSON selects an installed entry-point name;
 a GitHub URL in JSON does not install a package. Use a unique Python package
-namespace for external plugins. Do not reuse `app` in new packages.
+namespace for external plugins. Do not reuse `app` in new packages: the
+checkout-only `app/` shim here forwards to `data_gov` and is never installed.
 
 The [package-separation design](docs/STORE_PACKAGES_DESIGN.md) describes proposed
 `data-lake` and `data-warehouse` hosts with external providers. Those are a
@@ -475,6 +510,7 @@ including AdminLTE and Bootstrap; dataset rights are separate again.
 - [Product contract](docs/00_CONTRATO.md)
 - [Integration examples](docs/INTEGRATION_EXAMPLES.md)
 - [Store adapter contract](docs/03_LAKE_ADAPTER.md)
+- [Resource registry](docs/08_RESOURCE_REGISTRY.md)
 - [Flow v3](docs/06_FLOW_V3_FAILSAFE.md) and [legacy Flow v2](docs/04_FLOW_V2.md)
 - [Research repository map](https://github.com/harveybc/predictor/blob/master/docs/RESEARCH_STACK.md)
 - [README quality standard](https://github.com/harveybc/predictor/blob/master/docs/README_STANDARD.md)

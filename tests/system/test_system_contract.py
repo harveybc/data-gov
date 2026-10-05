@@ -4,7 +4,7 @@ from tests.conftest import PREDICTOR_KEY
 
 
 def test_unknown_resource_is_fail_closed(client):
-    from app.client import DataGovClient
+    from data_gov.client import DataGovClient
 
     gov = DataGovClient(
         test_client=client,
@@ -22,7 +22,7 @@ def test_unknown_resource_is_fail_closed(client):
 
 
 def test_sql_injection_is_rejected(client):
-    from app.client import DataGovClient
+    from data_gov.client import DataGovClient
 
     gov = DataGovClient(
         test_client=client,
@@ -37,7 +37,7 @@ def test_sql_injection_is_rejected(client):
 
 
 def test_successful_reads_do_not_wake_roles(runtime, client):
-    from app.client import DataGovClient
+    from data_gov.client import DataGovClient
 
     role = runtime["plugins"]["role"]
     before = len(role.events)

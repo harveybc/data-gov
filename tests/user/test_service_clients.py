@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from app.client import DataGovClient
+from data_gov.client import DataGovClient
 from tests.conftest import DOIN_KEY, FINANCIAL_ROOT, HEURISTIC_KEY, PREDICTOR_KEY
 
 RESOURCE = "market_data/crypto/funding_rates/btcusdt/funding_rates.parquet"

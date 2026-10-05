@@ -66,13 +66,20 @@ def _wait(url, processes, deadline=30):
     raise RuntimeError(f"service did not become ready: {url}")
 
 
-def _start(checkout, config, env, log):
+def _start(checkout, config, env, log, argv=None, python=None):
+    """Start a service. `argv`/`python` let a reusable host stand in for a legacy checkout."""
     handle = open(log, "wb")
     process_env = dict(os.environ, **env)
     process_env["PYTHONPATH"] = str(checkout)
+    if argv is None:
+        argv = [python or sys.executable, "app/main.py", "--load_config", str(config)]
+        cwd = checkout
+    else:
+        argv = [*argv, "--load_config", str(config)]
+        cwd = Path(config).parent
+        process_env.pop("PYTHONPATH", None)
     process = subprocess.Popen(
-        [sys.executable, "app/main.py", "--load_config", str(config)],
-        cwd=checkout, env=process_env, stdout=handle, stderr=subprocess.STDOUT,
+        argv, cwd=cwd, env=process_env, stdout=handle, stderr=subprocess.STDOUT,
     )
     process._flow_v3_log_handle = handle
     return process
@@ -91,7 +98,7 @@ def _stop(processes):
         process._flow_v3_log_handle.close()
 
 
-def verify(data_gov, financial_lake, olap_lake):
+def verify(data_gov, financial_lake, olap_lake, new_lake_python=None, new_warehouse_python=None):
     actor_key = "disposable-actor-key"
     lake_token = "disposable-lake-token"
     password_salt = "disposable-salt"
@@ -164,8 +171,36 @@ def verify(data_gov, financial_lake, olap_lake):
         env = {"DATA_GOV_LAKE_TOKEN": lake_token}
         processes = []
         try:
-            processes.append(_start(financial_lake, fin_cfg, env, tmp / "financial.log"))
-            processes.append(_start(olap_lake, olap_cfg, env, tmp / "olap.log"))
+            if new_lake_python:
+                # The reusable host with the provider installed as a separate distribution.
+                # The governance configuration below is untouched: the kernel must not be
+                # able to tell which host answers.
+                _write(tmp / "financial.host.json", {
+                    "store_id": "financial_files", "web_port": financial_port,
+                    "backend": {"entry_point": "financial_files",
+                                "distribution": "financial-data-store",
+                                "settings": {"root_path": str(source), "include_globs": ["**/*.csv"],
+                                             "resource_contracts": {"panel.csv": contract},
+                                             "holdout_start": None,
+                                             "spool_dir": str(tmp / "fin-spool"),
+                                             "cuts_dir": str(tmp / "fin-cuts")}}})
+                processes.append(_start(financial_lake, tmp / "financial.host.json", env,
+                                        tmp / "financial.log",
+                                        argv=[new_lake_python, "-m", "data_lake_service.main"]))
+            else:
+                processes.append(_start(financial_lake, fin_cfg, env, tmp / "financial.log"))
+            if new_warehouse_python:
+                _write(tmp / "olap.host.json", {
+                    "store_id": "olap_cube", "web_port": olap_port,
+                    "backend": {"entry_point": "predictor_olap",
+                                "distribution": "predictor-olap-store",
+                                "settings": {"sqlite_path": str(cube), "holdout_start": None,
+                                             "lake_id": "olap_cube"}}})
+                processes.append(_start(olap_lake, tmp / "olap.host.json", env, tmp / "olap.log",
+                                        argv=[new_warehouse_python, "-m",
+                                              "data_warehouse_service.main"]))
+            else:
+                processes.append(_start(olap_lake, olap_cfg, env, tmp / "olap.log"))
             _wait(f"http://127.0.0.1:{financial_port}/healthz", processes)
             _wait(f"http://127.0.0.1:{olap_port}/healthz", processes)
             processes.append(_start(data_gov, gov_cfg, env, tmp / "governance.log"))
@@ -242,6 +277,8 @@ def verify(data_gov, financial_lake, olap_lake):
                 assert row == (digest, contract_sha, "VERIFIED_TRANSFER")
                 assert conn.execute("SELECT status FROM gov_terminal").fetchone()[0] == "COMPLETED"
             return {
+                "hosts": {"financial": "data_lake_service" if new_lake_python else "legacy",
+                          "olap": "data_warehouse_service" if new_warehouse_python else "legacy"},
                 "campaign_sha256": campaign_sha,
                 "terminal_sha256": terminal_receipt["terminal_sha256"],
                 "dataset_sha256": digest,
@@ -263,11 +300,18 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--financial-lake-checkout", required=True, type=Path)
     parser.add_argument("--olap-lake-checkout", required=True, type=Path)
+    parser.add_argument("--new-lake-python",
+                        help="interpreter with data-lake-service and the file provider installed; "
+                             "the reusable host then serves the financial store")
+    parser.add_argument("--new-warehouse-python",
+                        help="interpreter with data-warehouse-service and the OLAP provider installed")
     args = parser.parse_args(argv)
     result = verify(
         Path(__file__).resolve().parents[1],
         args.financial_lake_checkout.resolve(),
         args.olap_lake_checkout.resolve(),
+        new_lake_python=args.new_lake_python,
+        new_warehouse_python=args.new_warehouse_python,
     )
     print(json.dumps(result, indent=2, sort_keys=True))
     return 0

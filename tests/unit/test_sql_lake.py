@@ -2,7 +2,7 @@ import sqlite3
 
 import pytest
 
-from app.report import report_sha256
+from data_gov.report import report_sha256
 from lake_plugins.sql_lake import Plugin
 
 

@@ -118,6 +118,18 @@ class Plugin:
                     "ALTER TABLE governed_deliveries "
                     "ADD COLUMN availability_contract_sha256 TEXT"
                 )
+            # S2: the canonical availability contracts referenced by deliveries. Keyed by
+            # their own digest, so retention is idempotent and a contract can never be
+            # silently replaced: different bytes are a different key.
+            self._conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS governed_availability_contracts (
+                    contract_sha256 TEXT PRIMARY KEY,
+                    canonical_bytes TEXT NOT NULL,
+                    first_seen TEXT NOT NULL
+                )
+                """
+            )
             self._conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS governed_terminals (
@@ -411,6 +423,40 @@ class Plugin:
             )
             conn.commit()
             return state, True
+
+    def retain_availability_contract(self, contract_sha256, canonical_bytes):
+        """Keep the exact bytes a delivery's contract digest was taken over.
+
+        Refuses bytes that do not hash to the declared identity: retaining them under that key
+        would make every later resolution wrong in a way nothing downstream could detect.
+        """
+        import hashlib
+
+        if not isinstance(canonical_bytes, str) or not canonical_bytes:
+            return False
+        actual = hashlib.sha256(canonical_bytes.encode("ascii", "strict")).hexdigest()
+        if actual != str(contract_sha256).lower():
+            raise ValueError("availability contract does not match its identity")
+        with self._lock:
+            self._conn.execute(
+                "INSERT OR IGNORE INTO governed_availability_contracts "
+                "(contract_sha256, canonical_bytes, first_seen) VALUES (?, ?, ?)",
+                (actual, canonical_bytes, _utc()),
+            )
+            self._conn.commit()
+        return True
+
+    def availability_contracts(self, contract_sha256s):
+        """The retained contracts for these digests. A digest never seen is simply absent."""
+        digests = sorted({str(d).lower() for d in contract_sha256s if d})
+        if not digests:
+            return []
+        marks = ",".join("?" for _ in digests)
+        return self._rows(
+            "SELECT contract_sha256, canonical_bytes FROM governed_availability_contracts "
+            f"WHERE contract_sha256 IN ({marks})",
+            tuple(digests),
+        )
 
     def verified_deliveries(self, delivery_ids, *, campaign_sha256, actor, unit_id):
         if not delivery_ids:

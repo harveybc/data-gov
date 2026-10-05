@@ -38,7 +38,7 @@ def main():
         secrets_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
         secrets_path.chmod(0o600)
         print(f"wrote {secrets_path}")
-    from app.lake_auth import load_token, write_token
+    from data_gov.lake_auth import load_token, write_token
 
     if not load_token():
         token = secrets.token_urlsafe(32)

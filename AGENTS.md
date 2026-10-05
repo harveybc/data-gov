@@ -15,6 +15,13 @@ Plugins resolve through setuptools entry points (`datagov.pipeline`,
 `web`, `access`, `accounting`, `lake`, `role`). Config merge:
 plugin_params → defaults → JSON file → long-form CLI.
 
+The application package is **`data_gov`** (renamed from `app` on 2026-09-25).
+Every sibling repository ships its own top-level `app`, so the installed
+`data-gov` console script resolved into another project's `app.main`. The
+checkout-only `app/` shim forwards to `data_gov` for callers that still run
+`PYTHONPATH=<checkout> python -m app.main`; it is excluded from the installed
+distribution and must not be added back to `find_packages`.
+
 Holdout starts 2025-01-01 (financial-data catalog). Service calls without
 `X-Experiment-Key` are 403. Do not put plaintext API keys in git.
 

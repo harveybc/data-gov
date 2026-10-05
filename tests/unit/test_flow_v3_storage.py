@@ -6,9 +6,9 @@ from pathlib import Path
 
 import pytest
 
-from app.client import DataGovClient
-from app.httpstream import BufferedResponse
-from app.outbox import TerminalOutbox
+from data_gov.client import DataGovClient
+from data_gov.httpstream import BufferedResponse
+from data_gov.outbox import TerminalOutbox
 from lake_plugins.files_lake import Plugin as FilesLake
 from tests.conftest import LAB_EARLY, write_lab_files
 

@@ -10,8 +10,8 @@ import sqlite3
 from datetime import date, datetime, timezone
 from pathlib import Path
 
-from app.report import canonical_body, canonical_json, report_sha256
-from app.store_metadata import store_metadata
+from data_gov.report import canonical_body, canonical_json, report_sha256
+from data_gov.store_metadata import store_metadata
 
 
 _SELECT = re.compile(r"^\s*select\b", re.I)
@@ -357,7 +357,7 @@ class Plugin:
 
     def write_terminal(self, terminal: dict):
         """Store one canonical Flow-v3 terminal and its verified lineage."""
-        from app.governance import canonical_json, object_sha256
+        from data_gov.governance import canonical_json, object_sha256
 
         body = {
             key: value

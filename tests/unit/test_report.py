@@ -2,7 +2,7 @@
 
 import pytest
 
-from app.report import canonical_body, canonical_json, report_sha256
+from data_gov.report import canonical_body, canonical_json, report_sha256
 
 
 def _base():

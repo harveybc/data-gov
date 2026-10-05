@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from app.main import assemble, check_startup
+from data_gov.main import assemble, check_startup
 from lake_plugins.files_lake import Plugin as Files
 from lake_plugins.http_lake import Plugin as Http
 from lake_plugins.sql_lake import Plugin as Sql

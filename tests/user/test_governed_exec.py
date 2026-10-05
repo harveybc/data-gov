@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from app.client import DataGovClient
+from data_gov.client import DataGovClient
 from tests.conftest import LAB_EARLY, PREDICTOR_KEY
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -219,7 +219,7 @@ def test_metric_keys_csv_rows_and_row_counts(tmp_path):
 
 def test_outbox_failure_classes_status_dispose_and_supersede(tmp_path):
     """N4 for the generic consumer: same rules as the predictor outbox."""
-    from app.outbox import TerminalOutbox, classify_failure
+    from data_gov.outbox import TerminalOutbox, classify_failure
 
     assert classify_failure("terminal refused: http 503 down") == "TRANSIENT"
     assert classify_failure("terminal refused: http 401 x") == "CONFIGURATION"

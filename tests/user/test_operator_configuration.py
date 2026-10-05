@@ -11,7 +11,7 @@ def login(client):
 
 
 def payload(runtime):
-    from app.operator_config import editable_config
+    from data_gov.operator_config import editable_config
     return editable_config(runtime['config'])
 
 

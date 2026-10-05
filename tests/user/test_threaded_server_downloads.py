@@ -84,7 +84,7 @@ def test_second_governed_download_in_a_worker_thread_does_not_kill_the_server(tm
     config_path.write_text(json.dumps(config), encoding="utf-8")
     log = open(tmp_path / "server.log", "wb")
     server = subprocess.Popen(
-        [sys.executable, "-X", "faulthandler", "app/main.py", "--load_config", str(config_path)],
+        [sys.executable, "-X", "faulthandler", "-m", "data_gov.main", "--load_config", str(config_path)],
         cwd=ROOT, env=dict(os.environ, PYTHONPATH=str(ROOT), DATA_GOV_LAKE_TOKEN="t"),
         stdout=log, stderr=subprocess.STDOUT,
     )

@@ -239,7 +239,7 @@ nothing changes, zero Hermes calls.
 
 ## 6. Client
 
-`app.client.DataGovClient` gains:
+`data_gov.client.DataGovClient` gains:
 
 ```python
 gov.download(lake, resource, dest_dir, start=None, end=None)
@@ -278,7 +278,7 @@ upper bound (the old `<= to + 1 day` delivered the first holdout midnight row).
 2. Write `<out-dir>/governed_config.json`: inputs point at the cached files; `results_file`,
    `output_file`, `uncertainties_file`, every `*_plot_file`, `save_model`, `save_config` and
    `save_log` point under `<out-dir>`, so committed samples are never overwritten.
-3. Run `app/main.py --load_config <out-dir>/governed_config.json <extra>` with
+3. Run `python -m data_gov.main --load_config <out-dir>/governed_config.json <extra>` with
    `CUDA_VISIBLE_DEVICES=""`.
 4. `config_sha256` is computed **after the run** from the effective config predictor wrote to
    `save_config`, canonicalised: the six input keys replaced by `gov:<lake>/<resource>@<sha256>`,

@@ -11,7 +11,7 @@ import threading
 import uuid
 from pathlib import Path
 
-from app.store_metadata import store_metadata
+from data_gov.store_metadata import store_metadata
 from lake_plugins.errors import UnsupportedError
 
 import pandas as _pd
@@ -140,6 +140,10 @@ class Plugin:
         "time_column": None,
         "time_columns": {},
         "time_unit": None,
+        # strptime format of a *string* time column, when the producer writes one
+        # pandas cannot read unambiguously (e.g. "16/12/2006 17:24:00", day first).
+        # Declared, never guessed: a wrong guess silently swaps day and month.
+        "time_format": None,
         "resource_contracts": {},
         "untimed": [],
         "holdout_start": None,
@@ -246,7 +250,12 @@ class Plugin:
                     raise UnsupportedError("unparseable time column")
                 out = pd.to_datetime(series, unit=unit)
             else:
-                out = pd.to_datetime(series, utc=(timezone_mode == "UTC"))
+                fmt = self.params.get("time_format")
+                out = (
+                    pd.to_datetime(series, format=fmt, utc=(timezone_mode == "UTC"))
+                    if fmt
+                    else pd.to_datetime(series, utc=(timezone_mode == "UTC"))
+                )
         except (ValueError, TypeError, OverflowError) as exc:
             raise UnsupportedError("unparseable time column") from exc
         if not ptypes.is_datetime64_any_dtype(out):
@@ -539,9 +548,11 @@ class Plugin:
     def governed_download(self, resource_id: str, start=None, end=None):
         """Return a retained descriptor for bytes validated by an availability contract."""
         contract = self._resource_contract(resource_id)
-        contract_sha256 = hashlib.sha256(
-            json.dumps(contract, sort_keys=True, separators=(",", ":")).encode("ascii")
-        ).hexdigest()
+        # S2: the canonical bytes, kept rather than recomputed downstream. A consumer that
+        # holds only the digest cannot say what the contract SAID once this producer stops,
+        # and reconstructing it from the published headers does not reproduce the digest.
+        contract_canonical = json.dumps(contract, sort_keys=True, separators=(",", ":"))
+        contract_sha256 = hashlib.sha256(contract_canonical.encode("ascii")).hexdigest()
         info = self._download(
             resource_id, start, end,
             explicit_col=contract["available_time_column"],
@@ -579,6 +590,7 @@ class Plugin:
             info = dict(
                 info, sha256=actual, bytes=size, handle=os.fdopen(fd, "rb"),
                 availability_contract_sha256=contract_sha256,
+                availability_contract_canonical=contract_canonical,
             )
             fd = None
             return info
